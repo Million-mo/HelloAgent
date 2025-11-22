@@ -60,6 +60,12 @@ class MessageProcessor:
             
             # 3. 处理工具调用
             if tool_calls:
+                # 先结束第一条消息
+                await websocket.send_json({
+                    "type": "assistant_end",
+                    "messageId": message_id
+                })
+                # 然后处理工具调用
                 await self._handle_tool_calls(
                     websocket, session_id, messages, tool_calls, message_id
                 )
@@ -205,7 +211,13 @@ class MessageProcessor:
         # 通知工具调用开始
         await websocket.send_json({
             "type": "tool_calls_start",
-            "tools": [{"name": tc["function"]["name"]} for tc in tool_calls]
+            "tools": [
+                {
+                    "name": tc["function"]["name"],
+                    "arguments": tc["function"]["arguments"]
+                }
+                for tc in tool_calls
+            ]
         })
         
         # 执行所有工具调用并添加 tool 消息

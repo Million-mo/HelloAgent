@@ -10,6 +10,7 @@ from llm.client import LLMClient
 from chat.session import SessionManager
 from chat.processor import MessageProcessor
 from chat.react_processor import ReactAgentProcessor
+from chat.function_call_processor import FunctionCallProcessor
 from tools.registry import ToolRegistry
 from tools.weather import WeatherTool
 from tools.calculator import CalculatorTool
@@ -68,6 +69,14 @@ react_agent_processor = ReactAgentProcessor(
     max_steps=10  # 最大执行步数
 )
 
+# 初始化 Function Call Agent 处理器
+function_call_processor = FunctionCallProcessor(
+    llm_client=llm_client,
+    tool_registry=tool_registry,
+    session_manager=session_manager,
+    max_iterations=10  # 最大迭代次数
+)
+
 # --- 4. 路由和事件处理 ---
 
 @app.get("/")
@@ -95,8 +104,9 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                 user_input = message_data['content']
                 messages = session_manager.get_messages(session_id)
                 
-                # 获取处理模式（默认使用 React Agent）
-                mode = message_data.get('mode', 'react')  # 'react' 或 'simple'
+                # 获取处理模式（默认使用 Function Call Agent）
+                mode = message_data.get('mode', 'function_call')  # 'function_call', 'react' 或 'simple'
+                print(f"[DEBUG] 接收到消息，模式: {mode}")  # 调试日志
                 
                 # 发送用户消息确认
                 await websocket.send_json({
@@ -112,8 +122,13 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                     current_task.cancel()
                 
                 # 根据模式选择处理器
-                if mode == 'react':
-                    # 使用 React Agent 处理器（支持多轮工具调用）
+                if mode == 'function_call':
+                    # 使用 Function Call Agent 处理器（原生Function Calling，自动多轮）
+                    task = asyncio.create_task(
+                        function_call_processor.process_streaming(websocket, session_id, user_input, messages)
+                    )
+                elif mode == 'react':
+                    # 使用 React Agent 处理器（Reasoning + Action 模式）
                     task = asyncio.create_task(
                         react_agent_processor.process_streaming(websocket, session_id, user_input, messages)
                     )

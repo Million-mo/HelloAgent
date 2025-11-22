@@ -10,7 +10,7 @@ class ChatApp {
         this.messageBuffers = {}; // 存储流式消息缓冲
         this.renderLocks = {}; // 渲染锁，避免高频重渲染
         this.isStreaming = false; // 是否正在流式输出
-        this.mode = 'react'; // 默认使用 React Agent 模式
+        this.mode = 'function_call'; // 默认使用 Function Call Agent 模式
         this.currentStep = 0; // 当前 React 步骤
         this.reactSteps = {}; // 存储 React 步骤信息
         this.init();
@@ -217,7 +217,11 @@ class ChatApp {
             case 'assistant_start':
                 this.removeTypingIndicator();
                 this.currentMessageId = data.messageId;
-                this.addAssistantMessage('', data.messageId);
+                // 检查是否已存在该消息气泡（避免重复创建）
+                const existingMsg = document.getElementById(data.messageId);
+                if (!existingMsg) {
+                    this.addAssistantMessage('', data.messageId);
+                }
                 this.isStreaming = true;
                 this.switchToStopButton();
                 break;
@@ -411,34 +415,113 @@ class ChatApp {
 
     showToolCallsStart(tools) {
         const messagesArea = document.getElementById('messagesArea');
+        // 创建独立的工具调用容器（不使用message气泡包装）
         const toolDiv = document.createElement('div');
         toolDiv.className = 'tool-call';
-        toolDiv.innerHTML = `
-            <div class="tool-call-content">
-                <div class="tool-call-header">
-                    <i class="fas fa-tools"></i>
-                    <span>正在调用工具: ${tools.map(t => t.name).join(', ')}</span>
+        const timestamp = Date.now();
+        toolDiv.id = `tool-call-container-${timestamp}`;
+        
+        // 为每个工具创建独立的折叠容器
+        const toolsHtml = tools.map((tool, idx) => {
+            const toolId = `tool-${timestamp}-${idx}`;
+            const argsDisplay = tool.arguments ? this.formatToolArguments(tool.arguments) : '{}';
+            return `
+                <div class="tool-call-item" id="${toolId}" data-tool-name="${this.escapeHtml(tool.name)}" data-tool-index="${idx}">
+                    <div class="tool-call-header" onclick="window.chatApp.toggleToolCall('${toolId}')">
+                        <div class="tool-call-title">
+                            <i class="fas fa-tools fa-spin"></i>
+                            <span class="tool-name">${this.escapeHtml(tool.name)}</span>
+                            <span class="tool-status">调用中...</span>
+                        </div>
+                        <i class="fas fa-chevron-right toggle-icon"></i>
+                    </div>
+                    <div class="tool-call-body" style="display: none;">
+                        <div class="tool-call-section">
+                            <div class="tool-section-label">
+                                <i class="fas fa-cog"></i>
+                                <strong>参数</strong>
+                            </div>
+                            <pre class="tool-arguments">${argsDisplay}</pre>
+                        </div>
+                        <div class="tool-call-section tool-result-section" style="display: none;">
+                            <div class="tool-section-label">
+                                <i class="fas fa-check-circle"></i>
+                                <strong>结果</strong>
+                            </div>
+                            <pre class="tool-result-content"></pre>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
+        }).join('');
+        
+        toolDiv.innerHTML = `<div class="tool-call-content">${toolsHtml}</div>`;
+        toolDiv.setAttribute('data-pending-count', tools.length);
         messagesArea.appendChild(toolDiv);
         this.scrollToBottom();
     }
 
     showToolCall(toolName, toolResult) {
+        // 查找对应的工具调用项（找到第一个未完成的）
         const messagesArea = document.getElementById('messagesArea');
-        const toolDiv = document.createElement('div');
-        toolDiv.className = 'tool-call';
-        toolDiv.innerHTML = `
-            <div class="tool-call-content">
-                <div class="tool-call-header">
-                    <i class="fas fa-check-circle"></i>
-                    <span>工具调用完成: ${toolName}</span>
+        const toolItems = messagesArea.querySelectorAll('.tool-call-item');
+        let targetTool = null;
+        
+        // 优先查找未完成的工具调用（没有success类的）
+        for (let item of toolItems) {
+            const nameEl = item.querySelector('.tool-name');
+            const hasSuccess = item.classList.contains('success');
+            if (nameEl && nameEl.textContent === toolName && !hasSuccess) {
+                targetTool = item;
+                break;
+            }
+        }
+        
+        if (targetTool) {
+            // 更新现有工具的状态和结果
+            const statusEl = targetTool.querySelector('.tool-status');
+            const iconEl = targetTool.querySelector('.tool-call-title i');
+            const resultSection = targetTool.querySelector('.tool-result-section');
+            const resultContent = targetTool.querySelector('.tool-result-content');
+            
+            if (statusEl) statusEl.textContent = '完成';
+            if (iconEl) {
+                iconEl.className = 'fas fa-check-circle';
+            }
+            if (resultSection) resultSection.style.display = 'block';
+            if (resultContent) resultContent.textContent = this.formatToolResult(toolResult);
+            
+            targetTool.classList.add('success');
+        } else {
+            // 如果找不到对应的工具项，创建新的独立工具调用
+            const toolDiv = document.createElement('div');
+            toolDiv.className = 'tool-call';
+            const toolId = `tool-${Date.now()}`;
+            toolDiv.innerHTML = `
+                <div class="tool-call-content">
+                    <div class="tool-call-item success" id="${toolId}">
+                        <div class="tool-call-header" onclick="window.chatApp.toggleToolCall('${toolId}')">
+                            <div class="tool-call-title">
+                                <i class="fas fa-check-circle"></i>
+                                <span class="tool-name">${this.escapeHtml(toolName)}</span>
+                                <span class="tool-status">完成</span>
+                            </div>
+                            <i class="fas fa-chevron-right toggle-icon"></i>
+                        </div>
+                        <div class="tool-call-body" style="display: none;">
+                            <div class="tool-call-section">
+                                <div class="tool-section-label">
+                                    <i class="fas fa-check-circle"></i>
+                                    <strong>结果</strong>
+                                </div>
+                                <pre class="tool-result-content">${this.formatToolResult(toolResult)}</pre>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="tool-call-result">${toolResult}</div>
-            </div>
-        `;
-        messagesArea.appendChild(toolDiv);
+            `;
+            messagesArea.appendChild(toolDiv);
+        }
         this.scrollToBottom();
     }
 
@@ -775,6 +858,80 @@ class ChatApp {
             <div class="react-finish-content">${this.escapeHtml(answer)}</div>
         `;
         this.scrollToBottom();
+    }
+
+    // === 工具调用辅助方法 ===
+    
+    toggleToolCall(toolId) {
+        const toolItem = document.getElementById(toolId);
+        if (!toolItem) return;
+        
+        const body = toolItem.querySelector('.tool-call-body');
+        const toggleIcon = toolItem.querySelector('.toggle-icon');
+        
+        if (body && toggleIcon) {
+            const isVisible = body.style.display !== 'none';
+            body.style.display = isVisible ? 'none' : 'block';
+            toggleIcon.className = isVisible ? 'fas fa-chevron-right toggle-icon' : 'fas fa-chevron-down toggle-icon';
+        }
+    }
+    
+    formatToolArguments(args) {
+        if (typeof args === 'string') {
+            try {
+                const parsed = JSON.parse(args);
+                return JSON.stringify(parsed, null, 2);
+            } catch (e) {
+                return args;
+            }
+        } else if (typeof args === 'object') {
+            return JSON.stringify(args, null, 2);
+        }
+        return String(args);
+    }
+    
+    formatToolResult(result) {
+        if (typeof result === 'string') {
+            try {
+                const parsed = JSON.parse(result);
+                return JSON.stringify(parsed, null, 2);
+            } catch (e) {
+                return result;
+            }
+        } else if (typeof result === 'object') {
+            return JSON.stringify(result, null, 2);
+        }
+        return String(result);
+    }
+    
+    formatArgsForTooltip(args) {
+        if (!args) return '无参数';
+        
+        if (typeof args === 'string') {
+            try {
+                const parsed = JSON.parse(args);
+                // 转换为紧凑的单行格式，但保持可读性
+                const compact = JSON.stringify(parsed);
+                // 如果太长，截断并添加省略号
+                if (compact.length > 150) {
+                    return compact.substring(0, 150) + '...';
+                }
+                return compact;
+            } catch (e) {
+                // 如果不是JSON，直接返回字符串
+                if (args.length > 150) {
+                    return args.substring(0, 150) + '...';
+                }
+                return args;
+            }
+        } else if (typeof args === 'object') {
+            const compact = JSON.stringify(args);
+            if (compact.length > 150) {
+                return compact.substring(0, 150) + '...';
+            }
+            return compact;
+        }
+        return String(args);
     }
 }
 

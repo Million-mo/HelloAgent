@@ -79,6 +79,8 @@ class FunctionCallProcessor:
         try:
             # 多轮迭代处理
             for iteration in range(self.max_iterations):
+                print(f"[FunctionCallAgent] 迭代 {iteration + 1}/{self.max_iterations}")
+                
                 # 检查取消信号
                 if self.session_manager.get_cancel_flag(session_id):
                     await websocket.send_json({
@@ -87,16 +89,25 @@ class FunctionCallProcessor:
                     })
                     return
                 
+                # 如果不是第一次迭代，创建新的 message_id
+                if iteration > 0:
+                    message_id = f"msg_{uuid.uuid4().hex[:8]}"
+                    self.session_manager.set_current_message(session_id, message_id)
+                
                 # 调用LLM并处理响应
                 has_tool_calls = await self._llm_iteration(
                     websocket, session_id, messages, message_id, iteration
                 )
                 
+                print(f"[FunctionCallAgent] 迭代 {iteration + 1} 完成，是否有工具调用: {has_tool_calls}")
+                
                 # 如果没有工具调用，说明LLM已给出最终答案，结束循环
                 if not has_tool_calls:
+                    print(f"[FunctionCallAgent] LLM已返回最终答案，结束迭代")
                     break
             
             # 发送结束信号
+            print(f"[FunctionCallAgent] 所有迭代完成，共 {iteration + 1} 次")
             await websocket.send_json({
                 "type": "assistant_end",
                 "messageId": message_id
@@ -151,12 +162,11 @@ class FunctionCallProcessor:
         # 发起流式请求
         response = await self.llm_client.client.chat.completions.create(**request_params)
         
-        # 仅在第一次迭代时发送开始信号
-        if iteration == 0:
-            await websocket.send_json({
-                "type": "assistant_start",
-                "messageId": message_id
-            })
+        # 发送开始信号（每次迭代都发送）
+        await websocket.send_json({
+            "type": "assistant_start",
+            "messageId": message_id
+        })
         
         # 收集响应数据
         tool_calls_dict = {}
@@ -198,12 +208,20 @@ class FunctionCallProcessor:
         # 处理本次迭代的结果
         tool_calls = list(tool_calls_dict.values()) if tool_calls_dict else None
         
+        print(f"[FunctionCallAgent] 迭代 {iteration} - tool_calls: {len(tool_calls) if tool_calls else 0}, content: {len(content_buffer)} 字符")
+        
         if tool_calls:
             # 有工具调用：保存assistant消息并执行工具
             messages.append({
                 "role": "assistant",
                 "content": content_buffer if content_buffer else None,
                 "tool_calls": tool_calls
+            })
+            
+            # 先结束当前消息
+            await websocket.send_json({
+                "type": "assistant_end",
+                "messageId": message_id
             })
             
             # 执行工具调用
@@ -238,7 +256,13 @@ class FunctionCallProcessor:
         # 通知前端工具调用开始
         await websocket.send_json({
             "type": "tool_calls_start",
-            "tools": [{"name": tc["function"]["name"]} for tc in tool_calls]
+            "tools": [
+                {
+                    "name": tc["function"]["name"],
+                    "arguments": tc["function"]["arguments"]
+                } 
+                for tc in tool_calls
+            ]
         })
         
         # 执行所有工具调用
