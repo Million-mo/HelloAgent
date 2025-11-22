@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI智能助手 - 多轮对话</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Markdown 渲染和代码高亮 -->
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.0.0/dist/markdown-it.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-robot"></i>
+                    <h1>AI智能助手</h1>
+                </div>
+                <div class="header-actions">
+                    <span id="status" class="status">
+                        <i class="fas fa-circle status-dot"></i>
+                        <span class="status-text">连接中...</span>
+                    </span>
+                    <button onclick="clearChat()" class="btn btn-secondary">
+                        <i class="fas fa-trash"></i>
+                        清空对话
+                    </button>
+                    <button id="stopButton" onclick="stopStreaming()" class="btn btn-secondary" disabled>
+                        <i class="fas fa-stop"></i>
+                        停止输出
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <div class="chat-container">
+                <!-- Messages Area -->
+                <div id="messagesArea" class="messages-area">
+                    <div class="welcome-message">
+                        <i class="fas fa-comments"></i>
+                        <p>开始你的对话吧！试试问天气，比如："北京天气怎么样？"</p>
+                    </div>
+                </div>
+
+                <!-- Input Area -->
+                <div class="input-area">
+                    <div class="input-container">
+                        <input 
+                            type="text" 
+                            id="messageInput" 
+                            placeholder="输入你的消息..." 
+                            class="message-input"
+                            onkeypress="handleKeyPress(event)"
+                        >
+                        <button 
+                            onclick="sendMessage()" 
+                            class="btn btn-primary send-btn"
+                            id="sendButton"
+                        >
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 AI Chat. Powered by DeepSeek</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

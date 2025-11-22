@@ -1,0 +1,713 @@
+/* ========================================
+   CSS Variables - Theme Configuration
+   ======================================== */
+:root {
+    /* Colors */
+    --primary-color: #3b82f6;
+    --primary-hover: #2563eb;
+    --secondary-color: #6b7280;
+    --success-color: #10b981;
+    --error-color: #ef4444;
+    --warning-color: #f59e0b;
+    
+    /* Backgrounds */
+    --bg-primary: #f9fafb;
+    --bg-secondary: #ffffff;
+    
+    /* Text */
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    
+    /* Borders & Shadows */
+    --border-color: #e5e7eb;
+    --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* ========================================
+   Global Styles
+   ======================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+/* ========================================
+   Header Section
+   ======================================== */
+.header {
+    background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+    color: white;
+    padding: 1rem 0;
+    box-shadow: var(--shadow-lg);
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.logo i {
+    font-size: 2rem;
+}
+
+.logo h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.status-dot {
+    font-size: 0.5rem;
+}
+
+.status-dot.connected {
+    color: #86efac;
+}
+
+.status-dot.disconnected {
+    color: #fca5a5;
+}
+
+/* ========================================
+   Main Content Area
+   ======================================== */
+.main {
+    flex: 1;
+    padding: 2rem 0;
+    overflow: hidden;
+}
+
+.chat-container {
+    background: var(--bg-secondary);
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow-lg);
+    height: calc(100vh - 200px);
+    display: flex;
+    flex-direction: column;
+}
+
+.messages-area {
+    flex: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+}
+
+.messages-area::-webkit-scrollbar {
+    width: 6px;
+}
+
+.messages-area::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+    border-radius: 3px;
+}
+
+.messages-area::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+.messages-area::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+
+/* ========================================
+   Message Styles
+   ======================================== */
+.welcome-message {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-secondary);
+}
+
+.welcome-message i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.message {
+    display: flex;
+    margin-bottom: 1.5rem;
+    animation: fadeIn 0.3s ease-in;
+}
+
+.message.user {
+    justify-content: flex-end;
+}
+
+.message.assistant {
+    justify-content: flex-start;
+}
+
+.message-content {
+    max-width: 70%;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    position: relative;
+}
+
+.message.user .message-content {
+    background: var(--primary-color);
+    color: white;
+    border-bottom-right-radius: 0.25rem;
+}
+
+.message.assistant .message-content {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-bottom-left-radius: 0.25rem;
+}
+
+.message-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    opacity: 0.7;
+}
+
+.message-text {
+    word-wrap: break-word;
+    line-height: 1.6;
+}
+
+/* ========================================
+   Markdown Styles
+   ======================================== */
+/* 基础 Markdown 元素 */
+.message-text > *:first-child {
+    margin-top: 0 !important;
+}
+
+.message-text > *:last-child {
+    margin-bottom: 0 !important;
+}
+
+.message-text h1,
+.message-text h2,
+.message-text h3,
+.message-text h4,
+.message-text h5,
+.message-text h6 {
+    margin-top: 1.2em;
+    margin-bottom: 0.6em;
+    font-weight: 600;
+    line-height: 1.3;
+    color: inherit;
+}
+
+.message-text h1 { font-size: 1.6em; }
+.message-text h2 { font-size: 1.4em; }
+.message-text h3 { font-size: 1.2em; }
+.message-text h4 { font-size: 1.1em; }
+
+.message-text p {
+    margin: 0.6em 0;
+    line-height: 1.6;
+}
+
+/* 重置外层pre标签 */
+.message-text > pre {
+    margin: 0;
+    padding: 0;
+    line-height: 0;
+    background: transparent;
+    border: none;
+    font-family: inherit;
+}
+
+.message-text ul,
+.message-text ol {
+    margin: 0.7em 0;
+    padding-left: 2em;
+}
+
+.message-text ul {
+    list-style-type: disc;
+}
+
+.message-text ol {
+    list-style-type: decimal;
+}
+
+.message-text li {
+    margin: 0.3em 0;
+    line-height: 1.5;
+}
+
+.message-text li > p {
+    margin: 0.2em 0;
+}
+
+/* Markdown 其他元素 */
+.message-text blockquote {
+    border-left: 4px solid var(--border-color);
+    padding-left: 1em;
+    margin: 1em 0;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.message-text a {
+    color: var(--primary-color);
+    text-decoration: underline;
+    word-break: break-all;
+}
+
+.message-text a:hover {
+    color: var(--primary-hover);
+}
+
+.message-text hr {
+    border: none;
+    border-top: 2px solid var(--border-color);
+    margin: 1.5em 0;
+}
+
+.message-text img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+    margin: 0.5em 0;
+}
+
+.message-text strong {
+    font-weight: 600;
+}
+
+.message-text em {
+    font-style: italic;
+}
+
+.message-text del {
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+
+/* Markdown 表格 */
+.message-text table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em 0;
+    font-size: 0.9em;
+}
+
+.message-text table th,
+.message-text table td {
+    border: 1px solid var(--border-color);
+    padding: 0.6em 0.8em;
+    text-align: left;
+}
+
+.message-text table th {
+    background: var(--bg-primary);
+    font-weight: 600;
+}
+
+.message-text table tr:nth-child(even) {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+/* ========================================
+   Code Block Styles
+   ======================================== */
+/* 代码块容器 */
+.message-text .code-wrapper {
+    background: #0b0f14;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 12px 0;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 12px rgba(11, 15, 20, 0.25);
+    position: relative;
+}
+
+.message-text .code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.05); /* 稍微亮一点的背景 */
+    padding: 10px 16px; /* 增加内边距 */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    min-height: 40px;
+}
+
+.message-text .code-lang {
+    color: rgba(255, 255, 255, 0.8); /* 颜色更亮 */
+    font-size: 13px; /* 字体稍大 */
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.message-text .copy-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px; /* 增加内边距 */
+    border-radius: 8px; /* 更圆润的边角 */
+    background: rgba(255, 255, 255, 0.1); /* 稍微亮一点的背景 */
+    border: none; /* 移除边框 */
+    color: white;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    height: auto;
+    box-sizing: border-box;
+}
+
+.message-text .copy-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.message-text .copy-btn:active {
+    transform: scale(0.98);
+}
+
+.message-text .copy-btn.copied {
+    background: #10b981;
+    color: white;
+    transform: none;
+}
+
+/* 代码体容器 */
+.message-text .code-body {
+    background: #0b0f14;
+    overflow: auto;
+    line-height: 1;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.message-text .code-body::-webkit-scrollbar {
+    display: none;
+}
+
+/* 代码 pre 样式 */
+.message-text .code-body pre {
+    margin: 0 !important;
+    padding: 0px 0px !important;
+    background: transparent !important;
+    overflow-x: auto !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Source Code Pro", monospace !important;
+    font-size: 14px !important;
+    line-height: 1.45 !important;
+    color: #e6edf3 !important;
+}
+
+/* 代码行样式 */
+.message-text .code-body .line {
+    display: flex;
+    min-height: 1.45em;
+    align-items: flex-start;
+}
+
+/* 行号样式 */
+.message-text .code-body .line-number {
+    width: auto !important;
+    min-width: 0 !important;
+    padding-left: 16px !important;
+    padding-right: 20px !important;
+    margin-right: 0 !important;
+    flex-shrink: 0;
+    flex-grow: 0 !important;
+    display: inline-block !important;
+    user-select: none;
+    color: rgba(255, 255, 255, 0.3);
+    text-align: right;
+    font-size: 13px;
+}
+
+/* 行内容样式 */
+.message-text .code-body .line-content {
+    white-space: pre;
+    flex: 1;
+    min-width: 0;
+}
+
+/* 处理空行 */
+.message-text .code-body .line .line-content:empty::after {
+    content: "";
+    display: inline-block;
+    width: 0;
+    height: 0;
+}
+
+/* 行内代码样式 */
+.message-text code {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 1em;
+}
+
+.message-text .code-body pre code {
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    color: inherit;
+    display: block;
+    line-height: inherit;
+}
+
+.message-text :not(pre) > code {
+    background: rgba(0, 0, 0, 0.05); /* 浅色背景 */
+    padding: 0.2em 0.4em;
+    border-radius: 0.3rem;
+    color: var(--primary-color); /* 使用主题色 */
+    font-size: 0.95em; /* 稍微小一点 */
+    font-weight: 500;
+}
+
+.message.user .message-text :not(pre) > code {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+/* ========================================
+   Tool Call Styles
+   ======================================== */
+.tool-call {
+    display: flex;
+    justify-content: center;
+    margin: 1rem 0;
+    animation: slideIn 0.3s ease-out;
+}
+
+.tool-call-content {
+    background: #eff6ff; /* 浅蓝色背景 */
+    border: 1px solid #93c5fd; /* 蓝色边框 */
+    border-radius: 0.75rem; /* 更圆润 */
+    padding: 1rem 1.25rem;
+    max-width: 80%;
+    text-align: left; /* 左对齐 */
+    box-shadow: var(--shadow);
+}
+
+.tool-call-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #1d4ed8; /* 深蓝色文字 */
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.tool-call-result {
+    font-size: 0.875rem;
+    color: #374151;
+    line-height: 1.5;
+}
+
+/* ========================================
+   Typing Indicator
+   ======================================== */
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem;
+}
+
+.typing-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--text-secondary);
+    border-radius: 50%;
+    animation: typing 1.4s infinite;
+}
+
+.typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+    0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.5;
+    }
+    30% {
+        transform: translateY(-10px);
+        opacity: 1;
+    }
+}
+
+/* ========================================
+   Input Area
+   ======================================== */
+.input-area {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+}
+
+.input-container {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.message-input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+.message-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.send-btn {
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ========================================
+   Buttons
+   ======================================== */
+.btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+}
+
+.btn-secondary {
+    background: transparent;
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* ========================================
+   Footer
+   ======================================== */
+.footer {
+    padding: 1rem 0;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    border-top: 1px solid var(--border-color);
+}
+
+/* ========================================
+   Animations
+   ======================================== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ========================================
+   Responsive Design
+   ======================================== */
+@media (max-width: 768px) {
+    .container {
+        padding: 0 0.5rem;
+    }
+    
+    .message-content {
+        max-width: 85%;
+    }
+    
+    .header-content {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .chat-container {
+        height: calc(100vh - 250px);
+    }
+}
