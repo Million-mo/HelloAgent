@@ -90,6 +90,10 @@ class AppConfig(BaseModel):
             "1. 天气查询 (get_weather) - 查询城市天气信息\n"
             "2. 数学计算 (calculator) - 执行数学运算，支持加减乘除、幂运算和括号\n"
             "3. 时间日期 (get_current_time) - 获取当前时间和日期，支持不同时区\n"
+            "4. 终端命令 (execute_command) - 执行shell命令，查看系统信息、目录内容等\n"
+            "5. 读取文件 (read_file) - 读取文本文件内容\n"
+            "6. 写入文件 (write_file) - 将内容写入文件\n"
+            "7. 列出目录 (list_directory) - 列出目录中的文件和子目录\n"
             "请根据用户需求，灵活使用合适的工具来帮助用户。"
         ),
         description="System prompt for AI assistant"

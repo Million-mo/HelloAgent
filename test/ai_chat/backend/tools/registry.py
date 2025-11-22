@@ -71,16 +71,16 @@ class ToolRegistry:
         Returns:
             Tool execution result
         """
-        # Parse arguments
-        try:
-            arguments = json.loads(arguments_str)
-        except json.JSONDecodeError:
-            return f"错误：无法解析参数: {arguments_str}"
-        
         # Get tool
         tool = self.get_tool(tool_name)
         if not tool:
             return f"错误：未知工具 {tool_name}"
+        
+        # Parse arguments
+        try:
+            arguments = json.loads(arguments_str)
+        except json.JSONDecodeError as e:
+            return f"错误：参数必须是有效的 JSON 格式。\n输入: {arguments_str}\n错误: {str(e)}"
         
         # Execute tool
         try:

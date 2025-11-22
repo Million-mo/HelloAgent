@@ -9,10 +9,13 @@ from config import config
 from llm.client import LLMClient
 from chat.session import SessionManager
 from chat.processor import MessageProcessor
+from chat.react_processor import ReactAgentProcessor
 from tools.registry import ToolRegistry
 from tools.weather import WeatherTool
 from tools.calculator import CalculatorTool
 from tools.time_tool import TimeTool
+from tools.terminal import TerminalTool
+from tools.file_operations import ReadFileTool, WriteFileTool, ListDirectoryTool
 
 # --- 1. 配置和初始化 ---
 
@@ -37,9 +40,13 @@ llm_client.initialize()
 tool_registry = ToolRegistry()
 
 # 注册内置工具
-tool_registry.register(WeatherTool())      # 天气查询（mock数据）
-tool_registry.register(CalculatorTool())   # 计算器
-tool_registry.register(TimeTool())         # 时间日期
+tool_registry.register(WeatherTool())           # 天气查询（mock数据）
+tool_registry.register(CalculatorTool())        # 计算器
+tool_registry.register(TimeTool())              # 时间日期
+tool_registry.register(TerminalTool())          # 终端命令执行
+tool_registry.register(ReadFileTool())          # 读取文件
+tool_registry.register(WriteFileTool())         # 写入文件
+tool_registry.register(ListDirectoryTool())     # 列出目录
 
 # --- 3. 会话管理 (使用 SessionManager) ---
 
@@ -51,6 +58,14 @@ message_processor = MessageProcessor(
     llm_client=llm_client,
     tool_registry=tool_registry,
     session_manager=session_manager
+)
+
+# 初始化 React Agent 处理器
+react_agent_processor = ReactAgentProcessor(
+    llm_client=llm_client,
+    tool_registry=tool_registry,
+    session_manager=session_manager,
+    max_steps=10  # 最大执行步数
 )
 
 # --- 4. 路由和事件处理 ---
@@ -80,10 +95,14 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                 user_input = message_data['content']
                 messages = session_manager.get_messages(session_id)
                 
+                # 获取处理模式（默认使用 React Agent）
+                mode = message_data.get('mode', 'react')  # 'react' 或 'simple'
+                
                 # 发送用户消息确认
                 await websocket.send_json({
                     "type": "user_message_received",
-                    "content": user_input
+                    "content": user_input,
+                    "mode": mode
                 })
                 
                 # 如果已有任务在运行，先取消
@@ -92,10 +111,18 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                     session_manager.set_cancel_flag(session_id, True)
                     current_task.cancel()
                 
-                # 启动新的流式任务
-                task = asyncio.create_task(
-                    message_processor.process_streaming(websocket, session_id, user_input, messages)
-                )
+                # 根据模式选择处理器
+                if mode == 'react':
+                    # 使用 React Agent 处理器（支持多轮工具调用）
+                    task = asyncio.create_task(
+                        react_agent_processor.process_streaming(websocket, session_id, user_input, messages)
+                    )
+                else:
+                    # 使用简单处理器（单次工具调用）
+                    task = asyncio.create_task(
+                        message_processor.process_streaming(websocket, session_id, user_input, messages)
+                    )
+                
                 session_manager.set_task(session_id, task)
                 
                 # 任务完成后自动清理

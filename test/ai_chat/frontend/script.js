@@ -10,6 +10,9 @@ class ChatApp {
         this.messageBuffers = {}; // 存储流式消息缓冲
         this.renderLocks = {}; // 渲染锁，避免高频重渲染
         this.isStreaming = false; // 是否正在流式输出
+        this.mode = 'react'; // 默认使用 React Agent 模式
+        this.currentStep = 0; // 当前 React 步骤
+        this.reactSteps = {}; // 存储 React 步骤信息
         this.init();
         this.initMarked();
     }
@@ -234,6 +237,64 @@ class ChatApp {
                 this.switchToSendButton();
                 this.enableInput(true);
                 break;
+            // React Agent 相关消息类型
+            case 'react_start':
+                this.removeTypingIndicator();
+                this.currentMessageId = data.messageId;
+                this.currentStep = 0;
+                this.reactSteps = {};
+                this.addReactContainer(data.messageId, data.maxSteps);
+                this.isStreaming = true;
+                this.switchToStopButton();
+                break;
+            case 'react_step_start':
+                this.currentStep = data.step;
+                this.addReactStep(data.step, data.messageId);
+                break;
+            case 'react_chunk':
+                this.updateReactStepContent(data.step, data.content);
+                break;
+            case 'react_thought':
+                this.showReactThought(data.step, data.thought);
+                break;
+            case 'react_action':
+                this.showReactAction(data.step, data.action);
+                break;
+            case 'tool_call_start':
+                this.showToolCallStart(data.toolName, data.toolInput);
+                break;
+            case 'tool_call_end':
+                this.showToolCallEnd(data.toolName, data.toolResult);
+                break;
+            case 'tool_call_error':
+                this.showToolCallError(data.toolName, data.error);
+                break;
+            case 'react_observation':
+                this.showReactObservation(this.currentStep, data.observation);
+                break;
+            case 'react_step_end':
+                this.finalizeReactStep(data.step);
+                break;
+            case 'react_finish':
+                this.showReactFinish(data.answer, data.totalSteps);
+                this.currentMessageId = null;
+                this.isStreaming = false;
+                this.switchToSendButton();
+                this.enableInput(true);
+                break;
+            case 'react_max_steps':
+                this.showReactMaxSteps(data.answer);
+                this.currentMessageId = null;
+                this.isStreaming = false;
+                this.switchToSendButton();
+                this.enableInput(true);
+                break;
+            case 'react_error':
+                this.showError(data.message);
+                this.isStreaming = false;
+                this.switchToSendButton();
+                this.enableInput(true);
+                break;
         }
     }
 
@@ -420,10 +481,11 @@ class ChatApp {
             return;
         }
 
-        // 发送消息
+        // 发送消息（包含模式信息）
         this.ws.send(JSON.stringify({
             type: 'message',
-            content: message
+            content: message,
+            mode: this.mode  // 发送当前选择的模式
         }));
 
         // 清空输入框并重置高度
@@ -521,6 +583,198 @@ class ChatApp {
             localStorage.removeItem('chat_session_id');
             location.reload();
         }
+    }
+
+    // === React Agent 相关方法 ===
+
+    addReactContainer(messageId, maxSteps) {
+        const messagesArea = document.getElementById('messagesArea');
+        const containerDiv = document.createElement('div');
+        containerDiv.className = 'message assistant react-container';
+        containerDiv.id = messageId;
+        containerDiv.innerHTML = `
+            <div class="message-content">
+                <div class="message-header">
+                    <i class="fas fa-robot"></i>
+                    <span>React Agent （最大步数: ${maxSteps}）</span>
+                </div>
+                <div class="react-steps" id="react-steps-${messageId}"></div>
+                <div class="react-final-answer" id="react-final-${messageId}" style="display:none;"></div>
+            </div>
+        `;
+        messagesArea.appendChild(containerDiv);
+        this.scrollToBottom();
+    }
+
+    addReactStep(step, messageId) {
+        const stepsContainer = document.getElementById(`react-steps-${messageId}`);
+        if (!stepsContainer) return;
+
+        const stepDiv = document.createElement('div');
+        stepDiv.className = 'react-step';
+        stepDiv.id = `react-step-${messageId}-${step}`;
+        stepDiv.innerHTML = `
+            <div class="react-step-header">
+                <i class="fas fa-cog fa-spin"></i>
+                <strong>步骤 ${step}</strong>
+            </div>
+            <div class="react-step-content" id="react-step-content-${messageId}-${step}"></div>
+        `;
+        stepsContainer.appendChild(stepDiv);
+        this.scrollToBottom();
+    }
+
+    updateReactStepContent(step, content) {
+        const contentDiv = document.getElementById(`react-step-content-${this.currentMessageId}-${step}`);
+        if (contentDiv) {
+            if (!this.reactSteps[step]) {
+                this.reactSteps[step] = '';
+            }
+            this.reactSteps[step] += content;
+            contentDiv.textContent = this.reactSteps[step];
+            this.scrollToBottom();
+        }
+    }
+
+    showReactThought(step, thought) {
+        const stepDiv = document.getElementById(`react-step-${this.currentMessageId}-${step}`);
+        if (!stepDiv) return;
+
+        const thoughtDiv = document.createElement('div');
+        thoughtDiv.className = 'react-thought';
+        thoughtDiv.innerHTML = `
+            <div class="react-label">
+                <i class="fas fa-lightbulb"></i>
+                <strong>Thought:</strong>
+            </div>
+            <div class="react-text">${this.escapeHtml(thought)}</div>
+        `;
+        stepDiv.appendChild(thoughtDiv);
+        this.scrollToBottom();
+    }
+
+    showReactAction(step, action) {
+        const stepDiv = document.getElementById(`react-step-${this.currentMessageId}-${step}`);
+        if (!stepDiv) return;
+
+        const actionDiv = document.createElement('div');
+        actionDiv.className = 'react-action';
+        actionDiv.innerHTML = `
+            <div class="react-label">
+                <i class="fas fa-play-circle"></i>
+                <strong>Action:</strong>
+            </div>
+            <div class="react-text">${this.escapeHtml(action)}</div>
+        `;
+        stepDiv.appendChild(actionDiv);
+        this.scrollToBottom();
+    }
+
+    showToolCallStart(toolName, toolInput) {
+        const stepDiv = document.getElementById(`react-step-${this.currentMessageId}-${this.currentStep}`);
+        if (!stepDiv) return;
+
+        const toolDiv = document.createElement('div');
+        toolDiv.className = 'react-tool-call';
+        toolDiv.id = `tool-call-${this.currentMessageId}-${this.currentStep}`;
+        toolDiv.innerHTML = `
+            <div class="react-label">
+                <i class="fas fa-tools fa-spin"></i>
+                <strong>正在调用工具: ${this.escapeHtml(toolName)}</strong>
+            </div>
+            <div class="tool-input">输入: ${this.escapeHtml(toolInput)}</div>
+        `;
+        stepDiv.appendChild(toolDiv);
+        this.scrollToBottom();
+    }
+
+    showToolCallEnd(toolName, toolResult) {
+        const toolDiv = document.getElementById(`tool-call-${this.currentMessageId}-${this.currentStep}`);
+        if (toolDiv) {
+            toolDiv.className = 'react-tool-call success';
+            toolDiv.innerHTML = `
+                <div class="react-label">
+                    <i class="fas fa-check-circle"></i>
+                    <strong>工具调用成功: ${this.escapeHtml(toolName)}</strong>
+                </div>
+                <div class="tool-result">结果: ${this.escapeHtml(toolResult)}</div>
+            `;
+        }
+        this.scrollToBottom();
+    }
+
+    showToolCallError(toolName, error) {
+        const toolDiv = document.getElementById(`tool-call-${this.currentMessageId}-${this.currentStep}`);
+        if (toolDiv) {
+            toolDiv.className = 'react-tool-call error';
+            toolDiv.innerHTML = `
+                <div class="react-label">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <strong>工具调用失败: ${this.escapeHtml(toolName)}</strong>
+                </div>
+                <div class="tool-error">错误: ${this.escapeHtml(error)}</div>
+            `;
+        }
+        this.scrollToBottom();
+    }
+
+    showReactObservation(step, observation) {
+        const stepDiv = document.getElementById(`react-step-${this.currentMessageId}-${step}`);
+        if (!stepDiv) return;
+
+        const obsDiv = document.createElement('div');
+        obsDiv.className = 'react-observation';
+        obsDiv.innerHTML = `
+            <div class="react-label">
+                <i class="fas fa-eye"></i>
+                <strong>Observation:</strong>
+            </div>
+            <div class="react-text">${this.escapeHtml(observation)}</div>
+        `;
+        stepDiv.appendChild(obsDiv);
+        this.scrollToBottom();
+    }
+
+    finalizeReactStep(step) {
+        const stepDiv = document.getElementById(`react-step-${this.currentMessageId}-${step}`);
+        if (!stepDiv) return;
+
+        const header = stepDiv.querySelector('.react-step-header i');
+        if (header) {
+            header.className = 'fas fa-check-circle';
+        }
+        stepDiv.classList.add('completed');
+        delete this.reactSteps[step];
+    }
+
+    showReactFinish(answer, totalSteps) {
+        const finalDiv = document.getElementById(`react-final-${this.currentMessageId}`);
+        if (!finalDiv) return;
+
+        finalDiv.style.display = 'block';
+        finalDiv.innerHTML = `
+            <div class="react-finish-header">
+                <i class="fas fa-flag-checkered"></i>
+                <strong>最终答案 （总计 ${totalSteps} 步）</strong>
+            </div>
+            <div class="react-finish-content">${this.md ? this.md.render(answer) : this.escapeHtml(answer)}</div>
+        `;
+        this.scrollToBottom();
+    }
+
+    showReactMaxSteps(answer) {
+        const finalDiv = document.getElementById(`react-final-${this.currentMessageId}`);
+        if (!finalDiv) return;
+
+        finalDiv.style.display = 'block';
+        finalDiv.innerHTML = `
+            <div class="react-finish-header" style="color: #f59e0b;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>达到最大步数</strong>
+            </div>
+            <div class="react-finish-content">${this.escapeHtml(answer)}</div>
+        `;
+        this.scrollToBottom();
     }
 }
 
