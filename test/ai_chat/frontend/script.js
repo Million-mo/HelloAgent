@@ -9,6 +9,7 @@ class ChatApp {
         this.currentMessageId = null;
         this.messageBuffers = {}; // 存储流式消息缓冲
         this.renderLocks = {}; // 渲染锁，避免高频重渲染
+        this.isStreaming = false; // 是否正在流式输出
         this.init();
         this.initMarked();
     }
@@ -214,8 +215,8 @@ class ChatApp {
                 this.removeTypingIndicator();
                 this.currentMessageId = data.messageId;
                 this.addAssistantMessage('', data.messageId);
-                // 启用停止按钮
-                this.setStopButtonEnabled(true);
+                this.isStreaming = true;
+                this.switchToStopButton();
                 break;
             case 'assistant_chunk':
                 this.updateMessage(data.messageId, data.content);
@@ -229,9 +230,9 @@ class ChatApp {
             case 'assistant_end':
                 this.finalizeMessage(data.messageId);
                 this.currentMessageId = null;
-                this.enableInput(true); // 重新启用输入框
-                // 禁用停止按钮
-                this.setStopButtonEnabled(false);
+                this.isStreaming = false;
+                this.switchToSendButton();
+                this.enableInput(true);
                 break;
         }
     }
@@ -406,6 +407,12 @@ class ChatApp {
     }
 
     sendMessage() {
+        // 如果正在流式输出，则执行停止操作
+        if (this.isStreaming) {
+            this.stopStreaming();
+            return;
+        }
+
         const input = document.getElementById('messageInput');
         const message = input.value.trim();
         
@@ -426,39 +433,49 @@ class ChatApp {
         // 显示输入中指示器
         this.addTypingIndicator();
         
-        // 禁用发送按钮
+        // 禁用输入框
         this.enableInput(false);
     }
 
     enableInput(enable) {
         const input = document.getElementById('messageInput');
-        const sendBtn = document.getElementById('sendButton');
-        
         input.disabled = !enable;
-        sendBtn.disabled = !enable;
         
         if (enable) {
             input.focus();
         }
     }
 
-    setStopButtonEnabled(enabled) {
-        const stopBtn = document.getElementById('stopButton');
-        if (stopBtn) {
-            stopBtn.disabled = !enabled;
+    switchToStopButton() {
+        const sendBtn = document.getElementById('sendButton');
+        if (sendBtn) {
+            sendBtn.innerHTML = '<i class="fas fa-stop"></i><span>停止输出</span>';
+            sendBtn.className = 'btn btn-danger send-btn';
+        }
+    }
+
+    switchToSendButton() {
+        const sendBtn = document.getElementById('sendButton');
+        if (sendBtn) {
+            sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i><span>发送</span>';
+            sendBtn.className = 'btn btn-primary send-btn';
+            sendBtn.disabled = false;
         }
     }
 
     stopStreaming() {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
         if (!this.currentMessageId) return;
-        // 发送停止指令，附带当前消息ID
+        
+        // 发送停止指令
         this.ws.send(JSON.stringify({
             type: 'stop',
             messageId: this.currentMessageId
         }));
-        // 立即禁用停止按钮，避免重复点击
-        this.setStopButtonEnabled(false);
+        
+        // 立即更新状态
+        this.isStreaming = false;
+        this.switchToSendButton();
     }
 
     updateStatus(text, connected) {

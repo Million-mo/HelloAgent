@@ -610,6 +610,9 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 0.5rem;
+    min-width: 120px;
+    transition: all 0.2s;
 }
 
 .send-btn:disabled {
@@ -652,6 +655,17 @@ body {
 
 .btn-secondary:hover {
     background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-danger {
+    background: var(--error-color);
+    color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
 }
 
 /* ========================================
