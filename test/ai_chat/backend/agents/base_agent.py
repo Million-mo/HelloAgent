@@ -78,5 +78,21 @@ class BaseAgent(ABC):
         """获取可用工具列表"""
         return [tool.name for tool in self.tool_registry.get_all_tools()]
     
+    def _ensure_system_prompt(self, messages: List[Dict[str, Any]]) -> None:
+        """
+        确保消息历史中有system_prompt
+        
+        如果消息列表为空或第一条不是system消息，则添加Agent的system_prompt
+        
+        Args:
+            messages: 对话历史
+        """
+        if not messages or messages[0].get("role") != "system":
+            # 在开头插入system_prompt
+            messages.insert(0, {
+                "role": "system",
+                "content": self.system_prompt or "你是一个乐于助人的AI助手。"
+            })
+    
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}(name='{self.name}', type='{self.agent_type}')>"

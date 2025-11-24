@@ -45,6 +45,9 @@ class SimpleAgent(BaseAgent):
         messages: List[Dict[str, Any]]
     ) -> None:
         """执行简单对话"""
+        # 确保消息历史中有本 Agent 的 system_prompt
+        self._ensure_system_prompt(messages)
+        
         messages.append({"role": "user", "content": user_input})
         message_id = f"msg_{uuid.uuid4().hex[:8]}"
         self.session_manager.set_cancel_flag(session_id, False)
@@ -151,6 +154,9 @@ class AnalysisAgent(BaseAgent):
         messages: List[Dict[str, Any]]
     ) -> None:
         """执行分析任务"""
+        # 确保消息历史中有本 Agent 的 system_prompt
+        self._ensure_system_prompt(messages)
+        
         # 添加分析提示
         enhanced_input = f"请深入分析以下问题:\n{user_input}\n\n要求:\n1. 分步骤思考\n2. 提供多个角度的分析\n3. 给出结论和建议"
         messages.append({"role": "user", "content": enhanced_input})
@@ -257,6 +263,9 @@ class CodeAgent(BaseAgent):
         messages: List[Dict[str, Any]]
     ) -> None:
         """执行代码相关任务"""
+        # 确保消息历史中有本 Agent 的 system_prompt
+        self._ensure_system_prompt(messages)
+        
         messages.append({"role": "user", "content": user_input})
         message_id = f"msg_{uuid.uuid4().hex[:8]}"
         self.session_manager.set_cancel_flag(session_id, False)

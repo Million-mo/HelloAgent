@@ -73,6 +73,9 @@ class FunctionCallAgent(BaseAgent):
             user_input: 用户输入
             messages: 对话历史
         """
+        # 确保消息历史中有本 Agent 的 system_prompt
+        self._ensure_system_prompt(messages)
+        
         # 添加用户消息
         messages.append({"role": "user", "content": user_input})
         message_id = f"msg_{uuid.uuid4().hex[:8]}"

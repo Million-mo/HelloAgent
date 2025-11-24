@@ -52,8 +52,8 @@ tool_registry.register(ListDirectoryTool())     # 列出目录
 
 # --- 3. 会话管理 (使用 SessionManager) ---
 
-# 初始化会话管理器
-session_manager = SessionManager(system_prompt=config.app.system_prompt)
+# 初始化会话管理器（不册管理system_prompt，由Agent动态注入）
+session_manager = SessionManager()
 
 # --- 4. Agent 系统初始化 (多Agent架构) ---
 

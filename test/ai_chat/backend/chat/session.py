@@ -7,15 +7,13 @@ import asyncio
 class SessionManager:
     """Manages chat sessions, message history, and task control."""
     
-    def __init__(self, system_prompt: str):
+    def __init__(self):
         """
         Initialize session manager.
         
-        Args:
-            system_prompt: System prompt for new sessions
+        Note: SessionManager 不册管理 system_prompt，
+        由各个Agent在运行时动态注入自己的 system_prompt
         """
-        self.system_prompt = system_prompt
-        
         # 会话消息历史
         self._sessions: Dict[str, List[Dict[str, Any]]] = {}
         
@@ -35,10 +33,8 @@ class SessionManager:
             List of message dictionaries
         """
         if session_id not in self._sessions:
-            self._sessions[session_id] = [{
-                "role": "system",
-                "content": self.system_prompt
-            }]
+            # 初始化为空列表，由Agent动态注入system_prompt
+            self._sessions[session_id] = []
         return self._sessions[session_id]
     
     def add_message(self, session_id: str, message: Dict[str, Any]) -> None:
