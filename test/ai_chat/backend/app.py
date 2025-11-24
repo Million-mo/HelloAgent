@@ -11,6 +11,7 @@ from chat.session import SessionManager
 from chat.processor import MessageProcessor
 from chat.react_processor import ReactAgentProcessor
 from chat.function_call_processor import FunctionCallProcessor
+from agents import AgentManager, FunctionCallAgent, SimpleAgent, AnalysisAgent, CodeAgent
 from tools.registry import ToolRegistry
 from tools.weather import WeatherTool
 from tools.calculator import CalculatorTool
@@ -54,6 +55,60 @@ tool_registry.register(ListDirectoryTool())     # 列出目录
 # 初始化会话管理器
 session_manager = SessionManager(system_prompt=config.app.system_prompt)
 
+# --- 4. Agent 系统初始化 (多Agent架构) ---
+
+# 创建 Agent 管理器
+agent_manager = AgentManager(session_manager=session_manager)
+
+# 创建并注册不同类型的Agent
+
+# 1. FunctionCallAgent - 通用工具调用Agent（默认）
+function_call_agent = FunctionCallAgent(
+    name="通用助理",
+    llm_client=llm_client,
+    tool_registry=tool_registry,
+    session_manager=session_manager,
+    max_iterations=10,
+    system_prompt=config.app.system_prompt
+)
+agent_manager.register_agent(function_call_agent, is_default=True)
+
+# 2. SimpleAgent - 纯对话Agent
+simple_agent = SimpleAgent(
+    name="简单对话",
+    llm_client=llm_client,
+    tool_registry=tool_registry,
+    session_manager=session_manager,
+    system_prompt="你是一个友好的AI助手，专注于提供清晰、简洁的对话。"
+)
+agent_manager.register_agent(simple_agent)
+
+# 3. AnalysisAgent - 分析专家Agent
+analysis_agent = AnalysisAgent(
+    name="分析专家",
+    llm_client=llm_client,
+    tool_registry=tool_registry,
+    session_manager=session_manager,
+    thinking_depth=3
+)
+agent_manager.register_agent(analysis_agent)
+
+# 4. CodeAgent - 编程助手Agent
+code_agent = CodeAgent(
+    name="编程助手",
+    llm_client=llm_client,
+    tool_registry=tool_registry,
+    session_manager=session_manager,
+    max_iterations=8
+)
+agent_manager.register_agent(code_agent)
+
+print(f"\n📊 Agent系统统计:")
+for key, value in agent_manager.get_stats().items():
+    print(f"   - {key}: {value}")
+
+# --- 5. 消息处理器初始化 (向后兼容) ---
+
 # 初始化消息处理器
 message_processor = MessageProcessor(
     llm_client=llm_client,
@@ -77,7 +132,7 @@ function_call_processor = FunctionCallProcessor(
     max_iterations=10  # 最大迭代次数
 )
 
-# --- 4. 路由和事件处理 ---
+# --- 6. 路由和事件处理 ---
 
 @app.get("/")
 async def root():
@@ -89,6 +144,27 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+@app.get("/agent/info")
+async def get_agent_info():
+    """获取所有Agent信息"""
+    return agent_manager.list_agents()
+
+@app.get("/agent/stats")
+async def get_agent_stats():
+    """获取Agent系统统计"""
+    return agent_manager.get_stats()
+
+@app.post("/agent/switch/{session_id}")
+async def switch_agent(session_id: str, agent_name: str):
+    """
+    切换会话Agent
+    
+    Args:
+        session_id: 会话ID
+        agent_name: 目标Agent名称
+    """
+    return agent_manager.switch_agent(session_id, agent_name)
 
 @app.websocket("/ws/{session_id}")
 async def websocket_endpoint(websocket: WebSocket, session_id: str):
@@ -104,8 +180,8 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                 user_input = message_data['content']
                 messages = session_manager.get_messages(session_id)
                 
-                # 获取处理模式（默认使用 Function Call Agent）
-                mode = message_data.get('mode', 'function_call')  # 'function_call', 'react' 或 'simple'
+                # 获取处理模式（默认使用 Agent）
+                mode = message_data.get('mode', 'agent')  # 'agent', 'function_call', 'react' 或 'simple'
                 print(f"[DEBUG] 接收到消息，模式: {mode}")  # 调试日志
                 
                 # 发送用户消息确认
@@ -122,7 +198,14 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                     current_task.cancel()
                 
                 # 根据模式选择处理器
-                if mode == 'function_call':
+                if mode == 'agent':
+                    # 使用Agent管理器（推荐）
+                    # 支持指定Agent名称
+                    agent_name = message_data.get('agent_name')
+                    task = asyncio.create_task(
+                        agent_manager.run(websocket, session_id, user_input, messages, agent_name)
+                    )
+                elif mode == 'function_call':
                     # 使用 Function Call Agent 处理器（原生Function Calling，自动多轮）
                     task = asyncio.create_task(
                         function_call_processor.process_streaming(websocket, session_id, user_input, messages)

@@ -10,8 +10,9 @@ class ChatApp {
         this.messageBuffers = {}; // 存储流式消息缓冲
         this.renderLocks = {}; // 渲染锁，避免高频重渲染
         this.isStreaming = false; // 是否正在流式输出
-        this.mode = 'function_call'; // 默认使用 Function Call Agent 模式
+        // this.mode = 'function_call'; // 默认使用 Function Call Agent 模式
         // this.mode = 'react'; // 默认使用 Function Call Agent 模式
+        this.mode = 'agent'; // 默认使用 Function Call Agent 模式
         this.currentStep = 0; // 当前 React 步骤
         this.reactSteps = {}; // 存储 React 步骤信息
         this.init();
