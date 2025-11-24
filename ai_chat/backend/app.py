@@ -19,6 +19,7 @@ from agents import (
     SimpleAgent,
     AnalysisAgent,
     CodeAgent,
+    PlanningAgent,
 )
 from tools.registry import ToolRegistry
 from tools.weather import WeatherTool
@@ -110,38 +111,50 @@ function_call_agent = FunctionCallAgent(
 agent_manager.register_agent(function_call_agent, is_default=True)
 logger.info("FunctionCallAgent 已注册为默认 Agent")
 
-# 2. SimpleAgent - 纯对话Agent
-simple_agent = SimpleAgent(
-    name="简单对话",
-    llm_client=llm_client,
-    tool_registry=tool_registry,
-    session_manager=session_manager,
-    system_prompt="你是一个友好的AI助手，专注于提供清晰、简洁的对话。",
-)
-agent_manager.register_agent(simple_agent)
-logger.info("SimpleAgent 已注册")
+# # 2. SimpleAgent - 纯对话Agent
+# simple_agent = SimpleAgent(
+#     name="简单对话",
+#     llm_client=llm_client,
+#     tool_registry=tool_registry,
+#     session_manager=session_manager,
+#     system_prompt="你是一个友好的AI助手，专注于提供清晰、简洁的对话。",
+# )
+# agent_manager.register_agent(simple_agent)
+# logger.info("SimpleAgent 已注册")
 
-# 3. AnalysisAgent - 分析专家Agent
-analysis_agent = AnalysisAgent(
-    name="分析专家",
-    llm_client=llm_client,
-    tool_registry=tool_registry,
-    session_manager=session_manager,
-    thinking_depth=3,
-)
-agent_manager.register_agent(analysis_agent)
-logger.info("AnalysisAgent 已注册")
+# # 3. AnalysisAgent - 分析专家Agent
+# analysis_agent = AnalysisAgent(
+#     name="分析专家",
+#     llm_client=llm_client,
+#     tool_registry=tool_registry,
+#     session_manager=session_manager,
+#     thinking_depth=3,
+# )
+# agent_manager.register_agent(analysis_agent)
+# logger.info("AnalysisAgent 已注册")
 
-# 4. CodeAgent - 编程助手Agent
-code_agent = CodeAgent(
-    name="编程助手",
+# # 4. CodeAgent - 编程助手Agent
+# code_agent = CodeAgent(
+#     name="编程助手",
+#     llm_client=llm_client,
+#     tool_registry=tool_registry,
+#     session_manager=session_manager,
+#     max_iterations=8,
+# )
+# agent_manager.register_agent(code_agent)
+# logger.info("CodeAgent 已注册")
+
+# 5. PlanningAgent - 任务规划Agent
+planning_agent = PlanningAgent(
+    name="任务规划师",
     llm_client=llm_client,
     tool_registry=tool_registry,
     session_manager=session_manager,
-    max_iterations=8,
+    agent_manager=agent_manager,
+    max_iterations=20,
 )
-agent_manager.register_agent(code_agent)
-logger.info("CodeAgent 已注册")
+agent_manager.register_agent(planning_agent)
+logger.info("PlanningAgent 已注册")
 
 # 输出 Agent 系统统计
 stats = agent_manager.get_stats()

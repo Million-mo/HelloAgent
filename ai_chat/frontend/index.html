@@ -22,6 +22,17 @@
                     <h1>AI智能助手</h1>
                 </div>
                 <div class="header-actions">
+                    <!-- Agent 选择器 -->
+                    <div class="agent-selector">
+                        <label for="agentSelect">
+                            <i class="fas fa-robot"></i>
+                            <span>选择助手:</span>
+                        </label>
+                        <select id="agentSelect" class="agent-select">
+                            <option value="通用助理">通用助理</option>
+                            <option value="任务规划师">任务规划师</option>
+                        </select>
+                    </div>
                     <span id="status" class="status">
                         <i class="fas fa-circle status-dot"></i>
                         <span class="status-text">连接中...</span>

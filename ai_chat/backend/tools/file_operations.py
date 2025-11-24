@@ -1,9 +1,10 @@
 """File operation tools."""
 
 import os
+import asyncio
 import aiofiles
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Optional, Callable
 from .base import BaseTool
 
 
@@ -83,6 +84,19 @@ class ReadFileTool(BaseTool):
 class WriteFileTool(BaseTool):
     """Tool for writing content to files."""
     
+    def __init__(self):
+        """Initialize write file tool."""
+        self._progress_callback: Optional[Callable] = None
+    
+    def set_progress_callback(self, callback: Optional[Callable] = None) -> None:
+        """
+        设置进度回调函数
+        
+        Args:
+            callback: 进度回调函数
+        """
+        self._progress_callback = callback
+    
     @property
     def name(self) -> str:
         return "write_file"
@@ -122,13 +136,51 @@ class WriteFileTool(BaseTool):
         """
         try:
             path = Path(file_path).expanduser()
+            content_size = len(content)
             
             # 创建父目录（如果不存在）
             path.parent.mkdir(parents=True, exist_ok=True)
             
+            # 对于大文件，发送进度更新
+            chunk_size = 10000  # 每 10000 字符发送一次进度
+            is_large_file = content_size > chunk_size
+            
+            if is_large_file and self._progress_callback:
+                # 通知开始写入
+                await self._progress_callback(
+                    "write_file",
+                    "writing",
+                    {"file_path": str(path), "total_size": content_size, "written": 0}
+                )
+            
             # 写入文件
             async with aiofiles.open(path, 'w', encoding='utf-8') as f:
-                await f.write(content)
+                if is_large_file:
+                    # 分块写入，发送进度
+                    written = 0
+                    for i in range(0, content_size, chunk_size):
+                        chunk = content[i:i + chunk_size]
+                        await f.write(chunk)
+                        written += len(chunk)
+                        
+                        # 发送进度更新
+                        if self._progress_callback:
+                            await self._progress_callback(
+                                "write_file",
+                                "writing",
+                                {
+                                    "file_path": str(path),
+                                    "total_size": content_size,
+                                    "written": written,
+                                    "progress": int((written / content_size) * 100)
+                                }
+                            )
+                        
+                        # 等待一小段时间，让前端有时间更新显示
+                        await asyncio.sleep(0.01)
+                else:
+                    # 小文件直接写入
+                    await f.write(content)
             
             return f"成功写入文件 '{file_path}'（{len(content)} 字符）"
             

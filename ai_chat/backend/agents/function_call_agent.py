@@ -273,6 +273,18 @@ class FunctionCallAgent(BaseAgent):
             ]
         })
         
+        # 设置进度回调函数
+        async def progress_callback(tool_name: str, status: str, data: Any):
+            """工具执行进度回调"""
+            await websocket.send_json({
+                "type": "tool_progress",
+                "toolName": tool_name,
+                "status": status,
+                "data": data
+            })
+        
+        self.tool_registry.set_progress_callback(progress_callback)
+        
         # 执行所有工具调用
         for tool_call in tool_calls:
             # 检查取消信号
@@ -301,6 +313,9 @@ class FunctionCallAgent(BaseAgent):
                 "name": tool_name,
                 "content": tool_result
             })
+        
+        # 清除进度回调
+        self.tool_registry.set_progress_callback(None)
     
     def get_available_tools(self) -> List[str]:
         """获取可用工具列表"""

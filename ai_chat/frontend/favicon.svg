@@ -1,23 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
     <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#4facfe;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#00f2fe;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0099ff;stop-opacity:1" />
     </linearGradient>
   </defs>
-  <!-- 机器人头部 -->
-  <rect x="25" y="35" width="50" height="45" rx="8" fill="url(#grad)"/>
+  <!-- 主体方形 -->
+  <rect x="12" y="25" width="76" height="65" rx="10" fill="none" stroke="url(#grad)" stroke-width="8"/>
   <!-- 天线 -->
-  <line x1="50" y1="25" x2="50" y2="35" stroke="#333" stroke-width="3" stroke-linecap="round"/>
-  <circle cx="50" cy="22" r="4" fill="#ff6b6b"/>
+  <line x1="50" y1="25" x2="50" y2="10" stroke="url(#grad)" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="50" cy="7" r="5" fill="url(#grad)"/>
   <!-- 眼睛 -->
-  <circle cx="38" cy="50" r="6" fill="white"/>
-  <circle cx="62" cy="50" r="6" fill="white"/>
-  <circle cx="38" cy="50" r="3" fill="#333"/>
-  <circle cx="62" cy="50" r="3" fill="#333"/>
+  <rect x="28" y="45" width="12" height="12" rx="3" fill="url(#grad)"/>
+  <rect x="60" y="45" width="12" height="12" rx="3" fill="url(#grad)"/>
   <!-- 嘴巴 -->
-  <path d="M 35 65 Q 50 72 65 65" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
-  <!-- 耳朵 -->
-  <rect x="20" y="45" width="5" height="15" rx="2" fill="#333"/>
-  <rect x="75" y="45" width="5" height="15" rx="2" fill="#333"/>
+  <rect x="38" y="72" width="24" height="6" rx="3" fill="url(#grad)"/>
 </svg>

@@ -219,19 +219,24 @@ class ChatApp {
             case 'assistant_start':
                 this.removeTypingIndicator();
                 this.currentMessageId = data.messageId;
-                // 检查是否已存在该消息气泡（避免重复创建）
-                const existingMsg = document.getElementById(data.messageId);
-                if (!existingMsg) {
-                    this.addAssistantMessage('', data.messageId);
-                }
+                // 不立即创建消息气泡，等到收到第一个chunk时再创建
+                // 这样可以避免显示空白气泡
                 this.isStreaming = true;
                 this.switchToStopButton();
                 break;
             case 'assistant_chunk':
+                // 收到第一个chunk时才创建消息气泡
+                const existingMsg = document.getElementById(data.messageId);
+                if (!existingMsg) {
+                    this.addAssistantMessage('', data.messageId);
+                }
                 this.updateMessage(data.messageId, data.content);
                 break;
             case 'tool_calls_start':
                 this.showToolCallsStart(data.tools);
+                break;
+            case 'tool_progress':
+                this.updateToolProgress(data.toolName, data.status, data.data);
                 break;
             case 'tool_call':
                 this.showToolCall(data.toolName, data.toolResult);
@@ -242,6 +247,17 @@ class ChatApp {
                 this.isStreaming = false;
                 this.switchToSendButton();
                 this.enableInput(true);
+                break;
+            // Planning Agent TodoList
+            case 'planning_start':
+                // 不显示typing indicator，而是显示一个规划中的消息气泡
+                this.showPlanningMessage(data.messageId);
+                break;
+            case 'todo_list':
+                this.createTodoList(data.messageId, data.tasks);
+                break;
+            case 'todo_update':
+                this.updateTodoItem(data.task_id, data.status, data.result, data.error);
                 break;
             // React Agent 相关消息类型
             case 'react_start':
@@ -383,6 +399,10 @@ class ChatApp {
             
             // 清理缓冲区
             delete this.messageBuffers[messageId];
+        } else {
+            // 如果消息气泡不存在（说明没有内容），也要清理缓冲区
+            delete this.messageBuffers[messageId];
+            delete this.renderLocks[messageId];
         }
     }
 
@@ -473,6 +493,12 @@ class ChatApp {
         }
         
         if (targetTool) {
+            // 移除进度显示（如果有）
+            const progressSection = targetTool.querySelector('.tool-progress-section');
+            if (progressSection) {
+                progressSection.remove();
+            }
+            
             // 更新现有工具的状态和结果
             const statusEl = targetTool.querySelector('.tool-status');
             const iconEl = targetTool.querySelector('.tool-call-title i');
@@ -519,6 +545,177 @@ class ChatApp {
         }
         this.scrollToBottom();
     }
+    
+    updateToolProgress(toolName, status, data) {
+        // 查找对应的工具调用项
+        const messagesArea = document.getElementById('messagesArea');
+        const toolItems = messagesArea.querySelectorAll('.tool-call-item');
+        let targetTool = null;
+        
+        for (let item of toolItems) {
+            const nameEl = item.querySelector('.tool-name');
+            const hasSuccess = item.classList.contains('success');
+            if (nameEl && nameEl.textContent === toolName && !hasSuccess) {
+                targetTool = item;
+                break;
+            }
+        }
+        
+        if (!targetTool) return;
+        
+        const statusEl = targetTool.querySelector('.tool-status');
+        const iconEl = targetTool.querySelector('.tool-call-title i');
+        
+        if (status === 'executing') {
+            // 工具开始执行
+            if (statusEl) {
+                if (toolName === 'write_file') {
+                    // 显示文件名
+                    const fileName = data && data.file_path ? this.getFileName(data.file_path) : '';
+                    statusEl.textContent = fileName ? `正在写入: ${fileName}` : '正在写入文件...';
+                    
+                    // 在工具调用体中添加文件信息
+                    const toolBody = targetTool.querySelector('.tool-call-body');
+                    if (toolBody && data && data.file_path) {
+                        let fileInfoSection = targetTool.querySelector('.tool-file-info-section');
+                        if (!fileInfoSection) {
+                            fileInfoSection = document.createElement('div');
+                            fileInfoSection.className = 'tool-call-section tool-file-info-section';
+                            fileInfoSection.innerHTML = `
+                                <div class="tool-section-label">
+                                    <i class="fas fa-file"></i>
+                                    <strong>文件信息</strong>
+                                </div>
+                                <div class="file-info-content">
+                                    <div class="file-info-item">
+                                        <span class="file-info-label">文件路径:</span>
+                                        <span class="file-info-value">${this.escapeHtml(data.file_path)}</span>
+                                    </div>
+                                </div>
+                            `;
+                            toolBody.insertBefore(fileInfoSection, toolBody.firstChild);
+                            fileInfoSection.style.display = 'block';
+                            
+                            // 展开工具调用详情
+                            toolBody.style.display = 'block';
+                            const toggleIcon = targetTool.querySelector('.toggle-icon');
+                            if (toggleIcon) {
+                                toggleIcon.className = 'fas fa-chevron-down toggle-icon';
+                            }
+                        }
+                    }
+                } else if (toolName === 'read_file') {
+                    statusEl.textContent = '正在读取文件...';
+                } else if (toolName === 'execute_command') {
+                    statusEl.textContent = '正在执行命令...';
+                } else {
+                    statusEl.textContent = '执行中...';
+                }
+            }
+        } else if (status === 'writing' && data) {
+            // 文件写入进度
+            let progressSection = targetTool.querySelector('.tool-progress-section');
+            
+            if (!progressSection) {
+                // 创建进度显示区域
+                const toolBody = targetTool.querySelector('.tool-call-body');
+                progressSection = document.createElement('div');
+                progressSection.className = 'tool-call-section tool-progress-section';
+                const fileName = data.file_path ? this.getFileName(data.file_path) : '文件';
+                progressSection.innerHTML = `
+                    <div class="tool-section-label">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <strong>正在写入: ${this.escapeHtml(fileName)}</strong>
+                    </div>
+                    <div class="tool-progress-content">
+                        <div class="progress-info">
+                            <span class="progress-label">写入进度:</span>
+                            <span class="progress-percentage">0%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" style="width: 0%"></div>
+                        </div>
+                        <div class="progress-details">
+                            <span class="progress-text">0 B / 0 B</span>
+                        </div>
+                    </div>
+                `;
+                toolBody.insertBefore(progressSection, toolBody.firstChild);
+                progressSection.style.display = 'block';
+                
+                // 展开工具调用详情
+                toolBody.style.display = 'block';
+                const toggleIcon = targetTool.querySelector('.toggle-icon');
+                if (toggleIcon) {
+                    toggleIcon.className = 'fas fa-chevron-down toggle-icon';
+                }
+            }
+            
+            // 更新进度条
+            if (data.progress !== undefined) {
+                const progressBar = progressSection.querySelector('.progress-bar');
+                const progressPercentage = progressSection.querySelector('.progress-percentage');
+                const progressText = progressSection.querySelector('.progress-text');
+                
+                if (progressBar) {
+                    progressBar.style.width = `${data.progress}%`;
+                }
+                if (progressPercentage) {
+                    progressPercentage.textContent = `${data.progress}%`;
+                }
+                if (progressText) {
+                    const written = this.formatSize(data.written || 0);
+                    const total = this.formatSize(data.total_size || 0);
+                    progressText.textContent = `${written} / ${total}`;
+                }
+            }
+            
+            if (statusEl) {
+                const fileName = data.file_path ? this.getFileName(data.file_path) : '文件';
+                statusEl.textContent = `写入中: ${fileName} (${data.progress || 0}%)`;
+            }
+        } else if (status === 'completed') {
+            // 工具执行完成
+            if (statusEl) {
+                if (toolName === 'write_file') {
+                    statusEl.textContent = '✓ 写入完成';
+                } else {
+                    statusEl.textContent = '完成';
+                }
+            }
+            if (iconEl) iconEl.className = 'fas fa-check-circle';
+            
+            // 移除进度区域的动画图标
+            const progressSection = targetTool.querySelector('.tool-progress-section');
+            if (progressSection) {
+                const spinIcon = progressSection.querySelector('.fa-spinner');
+                if (spinIcon) {
+                    spinIcon.className = 'fas fa-check-circle';
+                }
+            }
+        } else if (status === 'error') {
+            // 工具执行错误
+            if (statusEl) statusEl.textContent = '✗ 失败';
+            if (iconEl) iconEl.className = 'fas fa-exclamation-circle';
+            targetTool.classList.add('error');
+        }
+        
+        this.scrollToBottom();
+    }
+    
+    getFileName(filePath) {
+        // 从文件路径中提取文件名
+        if (!filePath) return '';
+        const parts = filePath.replace(/\\/g, '/').split('/');
+        return parts[parts.length - 1];
+    }
+    
+    formatSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+    }
 
     addTypingIndicator() {
         const messagesArea = document.getElementById('messagesArea');
@@ -559,19 +756,27 @@ class ChatApp {
             return;
         }
 
-        // 发送消息（包含模式信息）
+        // 获取当前选择的Agent
+        const agentSelect = document.getElementById('agentSelect');
+        const selectedAgent = agentSelect ? agentSelect.value : null;
+
+        // 发送消息（包含模式和Agent信息）
         this.ws.send(JSON.stringify({
             type: 'message',
             content: message,
-            mode: this.mode  // 发送当前选择的模式
+            mode: this.mode,  // 发送当前选择的模式
+            agent_name: selectedAgent  // 发送选择的Agent名称
         }));
 
         // 清空输入框并重置高度
         input.value = '';
         this.autoResizeInput(input);
         
-        // 显示输入中指示器
-        this.addTypingIndicator();
+        // 只有非PlanningAgent才显示通用的typing indicator
+        // PlanningAgent有专门的planning气泡
+        if (selectedAgent !== '任务规划师') {
+            this.addTypingIndicator();
+        }
         
         // 禁用输入框
         this.enableInput(false);
@@ -931,6 +1136,155 @@ class ChatApp {
             return compact;
         }
         return String(args);
+    }
+    
+    // TodoList 相关方法
+    createTodoList(messageId, tasks) {
+        // 先移除planning消息气泡
+        const planningMsg = document.getElementById(`planning_${messageId}`);
+        if (planningMsg) {
+            planningMsg.remove();
+        }
+        
+        const messagesArea = document.getElementById('messagesArea');
+        const todoContainer = document.createElement('div');
+        todoContainer.className = 'message assistant';
+        todoContainer.id = `todo_${messageId}`;
+        
+        let html = `
+            <div class="message-content">
+                <div class="message-header">
+                    <i class="fas fa-tasks"></i>
+                    <span class="role-name">AI助手 - 任务规划</span>
+                </div>
+                <div class="message-text">
+                    <div class="todo-list">
+                        <div class="todo-header">
+                            <h4>📋 任务清单</h4>
+                            <span class="todo-progress">0/${tasks.length} 已完成</span>
+                        </div>
+        `;
+        
+        tasks.forEach(task => {
+            const priorityClass = task.priority || 'medium';
+            const dependsText = task.dependencies && task.dependencies.length > 0 
+                ? `<span class="task-depends">依赖: ${task.dependencies.join(', ')}</span>` 
+                : '';
+            const agentText = task.assigned_agent 
+                ? `<span class="task-agent">🤖 ${task.assigned_agent}</span>` 
+                : '';
+            
+            html += `
+                <div class="todo-item" data-task-id="${task.id}" data-status="pending">
+                    <div class="todo-checkbox">
+                        <i class="far fa-circle"></i>
+                    </div>
+                    <div class="todo-content">
+                        <div class="todo-title priority-${priorityClass}">
+                            <span class="task-title">${task.title}</span>
+                            ${agentText}
+                        </div>
+                        <div class="todo-description">${task.description}</div>
+                        ${dependsText}
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        todoContainer.innerHTML = html;
+        messagesArea.appendChild(todoContainer);
+        this.scrollToBottom();
+    }
+    
+    showPlanningMessage(messageId) {
+        const messagesArea = document.getElementById('messagesArea');
+        const planningDiv = document.createElement('div');
+        planningDiv.className = 'message assistant';
+        planningDiv.id = `planning_${messageId}`;
+        
+        planningDiv.innerHTML = `
+            <div class="message-content">
+                <div class="message-header">
+                    <i class="fas fa-brain"></i>
+                    <span class="role-name">AI助手 - 任务规划</span>
+                </div>
+                <div class="message-text">
+                    <div class="planning-indicator">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>正在分析任务并生成计划...</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        messagesArea.appendChild(planningDiv);
+        this.scrollToBottom();
+    }
+    
+    updateTodoItem(taskId, status, result, error) {
+        const todoItem = document.querySelector(`[data-task-id="${taskId}"]`);
+        if (!todoItem) return;
+        
+        const checkbox = todoItem.querySelector('.todo-checkbox i');
+        const title = todoItem.querySelector('.task-title');
+        
+        todoItem.dataset.status = status;
+        
+        if (status === 'in_progress') {
+            checkbox.className = 'fas fa-spinner fa-spin';
+            todoItem.classList.add('todo-in-progress');
+        } else if (status === 'completed') {
+            checkbox.className = 'fas fa-check-circle';
+            todoItem.classList.remove('todo-in-progress');
+            todoItem.classList.add('todo-completed');
+            title.style.textDecoration = 'line-through';
+            
+            // 更新进度
+            this.updateTodoProgress();
+            
+            // 如果有结果，可以显示（可选）
+            if (result) {
+                const content = todoItem.querySelector('.todo-content');
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'task-result';
+                resultDiv.textContent = result.length > 100 ? result.substring(0, 100) + '...' : result;
+                content.appendChild(resultDiv);
+            }
+        } else if (status === 'failed') {
+            checkbox.className = 'fas fa-times-circle';
+            todoItem.classList.remove('todo-in-progress');
+            todoItem.classList.add('todo-failed');
+            
+            if (error) {
+                const content = todoItem.querySelector('.todo-content');
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'task-error';
+                errorDiv.textContent = '❗ ' + error;
+                content.appendChild(errorDiv);
+            }
+        }
+        
+        this.scrollToBottom();
+    }
+    
+    updateTodoProgress() {
+        const todoLists = document.querySelectorAll('.todo-list');
+        todoLists.forEach(list => {
+            const items = list.querySelectorAll('.todo-item');
+            const completed = list.querySelectorAll('.todo-item[data-status="completed"]').length;
+            const total = items.length;
+            
+            const progressSpan = list.querySelector('.todo-progress');
+            if (progressSpan) {
+                progressSpan.textContent = `${completed}/${total} 已完成`;
+            }
+        });
     }
 }
 

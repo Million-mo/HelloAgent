@@ -4,6 +4,7 @@ from .base_agent import BaseAgent
 from .agent_manager import AgentManager
 from .function_call_agent import FunctionCallAgent
 from .specialized_agents import SimpleAgent, AnalysisAgent, CodeAgent
+from .planning_agent import PlanningAgent
 
 __all__ = [
     "BaseAgent",
@@ -12,4 +13,5 @@ __all__ = [
     "SimpleAgent",
     "AnalysisAgent",
     "CodeAgent",
+    "PlanningAgent",
 ]
