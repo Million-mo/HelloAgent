@@ -11,6 +11,7 @@ class ChatApp {
         this.renderLocks = {}; // 渲染锁，避免高频重渲染
         this.isStreaming = false; // 是否正在流式输出
         this.mode = 'function_call'; // 默认使用 Function Call Agent 模式
+        // this.mode = 'react'; // 默认使用 Function Call Agent 模式
         this.currentStep = 0; // 当前 React 步骤
         this.reactSteps = {}; // 存储 React 步骤信息
         this.init();
@@ -349,13 +350,6 @@ class ChatApp {
             try {
                 // 实时渲染 Markdown（完全按照你的方案）
                 textDiv.innerHTML = this.md.render(content);
-                
-                // 自动滚动到底部（smooth 效果）
-                const messagesArea = document.getElementById('messagesArea');
-                messagesArea.scrollTo({
-                    top: messagesArea.scrollHeight,
-                    behavior: 'smooth'
-                });
             } catch (err) {
                 // 如果渲染失败，显示原始文本
                 textDiv.textContent = content;
@@ -658,7 +652,11 @@ class ChatApp {
 
     scrollToBottom() {
         const messagesArea = document.getElementById('messagesArea');
-        messagesArea.scrollTop = messagesArea.scrollHeight;
+        // 只在用户已经在底部附近时才自动滚动（避免打断用户向上查看历史消息）
+        const isNearBottom = messagesArea.scrollHeight - messagesArea.scrollTop - messagesArea.clientHeight < 150;
+        if (isNearBottom) {
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        }
     }
 
     clearChat() {
