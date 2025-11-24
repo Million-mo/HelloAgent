@@ -2,6 +2,9 @@
 
 from typing import Dict, List, Any
 import asyncio
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class SessionManager:
@@ -143,12 +146,15 @@ class SessionManager:
         task = self.get_task(session_id)
         if task and not task.done():
             task.cancel()
+            logger.debug(f"取消会话 {session_id} 的任务")
         
         # 清理所有会话数据
         self._sessions.pop(session_id, None)
         self._session_tasks.pop(session_id, None)
         self._session_cancel_flags.pop(session_id, None)
         self._session_current_message.pop(session_id, None)
+        
+        logger.info(f"会话 {session_id} 数据已清理")
     
     def session_exists(self, session_id: str) -> bool:
         """

@@ -7,6 +7,9 @@ from fastapi import WebSocket
 
 from tools.registry import ToolRegistry
 from .session import SessionManager
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class MessageProcessor:
@@ -78,6 +81,7 @@ class MessageProcessor:
         
         except asyncio.CancelledError:
             # 任务被取消：发送结束消息
+            logger.info(f"处理被取消 (session: {session_id})")
             current_id = self.session_manager.get_current_message(session_id) or message_id
             await websocket.send_json({
                 "type": "assistant_end",
@@ -85,7 +89,7 @@ class MessageProcessor:
             })
             return
         except Exception as e:
-            print(f"Error in process_streaming: {e}")
+            logger.error(f"处理消息错误 (session: {session_id}): {e}", exc_info=True)
             await websocket.send_json({
                 "type": "error",
                 "message": f"处理消息时出错: {str(e)}"

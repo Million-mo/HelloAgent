@@ -3,6 +3,9 @@
 import json
 from typing import Dict, List, Any, Optional
 from .base import BaseTool
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class ToolRegistry:
@@ -20,6 +23,7 @@ class ToolRegistry:
             tool: Tool instance to register
         """
         self._tools[tool.name] = tool
+        logger.debug(f"工具已注册: {tool.name}")
     
     def unregister(self, tool_name: str) -> None:
         """
@@ -28,7 +32,11 @@ class ToolRegistry:
         Args:
             tool_name: Name of tool to unregister
         """
-        self._tools.pop(tool_name, None)
+        if tool_name in self._tools:
+            self._tools.pop(tool_name, None)
+            logger.debug(f"工具已注销: {tool_name}")
+        else:
+            logger.warning(f"尝试注销不存在的工具: {tool_name}")
     
     def get_tool(self, tool_name: str) -> Optional[BaseTool]:
         """
@@ -74,22 +82,32 @@ class ToolRegistry:
         # Get tool
         tool = self.get_tool(tool_name)
         if not tool:
-            return f"错误：未知工具 {tool_name}"
+            error_msg = f"错误：未知工具 {tool_name}"
+            logger.error(error_msg)
+            return error_msg
         
         # Parse arguments
         try:
             arguments = json.loads(arguments_str)
+            logger.debug(f"执行工具: {tool_name}, 参数: {arguments}")
         except json.JSONDecodeError as e:
-            return f"错误：参数必须是有效的 JSON 格式。\n输入: {arguments_str}\n错误: {str(e)}"
+            error_msg = f"错误：参数必须是有效的 JSON 格式。\n输入: {arguments_str}\n错误: {str(e)}"
+            logger.error(f"工具 {tool_name} 参数解析失败: {e}")
+            return error_msg
         
         # Execute tool
         try:
             result = await tool.execute(**arguments)
+            logger.info(f"工具执行成功: {tool_name} -> {result[:100] if len(result) > 100 else result}")
             return result
         except TypeError as e:
-            return f"错误：参数不匹配 - {str(e)}"
+            error_msg = f"错误：参数不匹配 - {str(e)}"
+            logger.error(f"工具 {tool_name} 参数不匹配: {e}")
+            return error_msg
         except Exception as e:
-            return f"错误：工具执行失败 - {str(e)}"
+            error_msg = f"错误：工具执行失败 - {str(e)}"
+            logger.error(f"工具 {tool_name} 执行失败: {e}", exc_info=True)
+            return error_msg
     
     def tool_exists(self, tool_name: str) -> bool:
         """

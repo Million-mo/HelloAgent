@@ -73,6 +73,37 @@ class ServerConfig(BaseModel):
         )
 
 
+class LogConfig(BaseModel):
+    """Logging configuration."""
+    
+    log_dir: str = Field(
+        default="logs",
+        description="Directory for log files"
+    )
+    log_level: str = Field(
+        default="INFO",
+        description="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)"
+    )
+    max_bytes: int = Field(
+        default=10 * 1024 * 1024,  # 10MB
+        description="Maximum size of a single log file in bytes"
+    )
+    backup_count: int = Field(
+        default=5,
+        description="Number of backup log files to keep"
+    )
+    
+    @classmethod
+    def from_env(cls) -> "LogConfig":
+        """Create config from environment variables."""
+        return cls(
+            log_dir=os.getenv("LOG_DIR", cls.model_fields["log_dir"].default),
+            log_level=os.getenv("LOG_LEVEL", cls.model_fields["log_level"].default),
+            max_bytes=int(os.getenv("LOG_MAX_BYTES", str(cls.model_fields["max_bytes"].default))),
+            backup_count=int(os.getenv("LOG_BACKUP_COUNT", str(cls.model_fields["backup_count"].default))),
+        )
+
+
 class AppConfig(BaseModel):
     """Application configuration."""
     
@@ -107,6 +138,7 @@ class Config(BaseModel):
     cors: CORSConfig = Field(default_factory=CORSConfig)
     server: ServerConfig = Field(default_factory=ServerConfig)
     app: AppConfig = Field(default_factory=AppConfig)
+    log: LogConfig = Field(default_factory=LogConfig)
     
     @classmethod
     def load(cls) -> "Config":
@@ -114,6 +146,7 @@ class Config(BaseModel):
         return cls(
             llm=LLMConfig.from_env(),
             server=ServerConfig.from_env(),
+            log=LogConfig.from_env(),
         )
 
 

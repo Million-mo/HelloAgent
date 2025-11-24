@@ -5,6 +5,9 @@ from fastapi import WebSocket
 
 from .base_agent import BaseAgent
 from chat.session import SessionManager
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class AgentManager:
@@ -30,7 +33,7 @@ class AgentManager:
         self._default_agent: Optional[str] = None
         self._session_agents: Dict[str, str] = {}  # session_id -> agent_name
         
-        print("✅ AgentManager 已初始化")
+        logger.info("AgentManager 已初始化")
     
     def register_agent(self, agent: BaseAgent, is_default: bool = False) -> None:
         """
@@ -41,11 +44,11 @@ class AgentManager:
             is_default: 是否设为默认Agent
         """
         self._agents[agent.name] = agent
-        print(f"✅ Agent '{agent.name}' (类型: {agent.agent_type}) 已注册")
+        logger.info(f"Agent '{agent.name}' (类型: {agent.agent_type}) 已注册")
         
         if is_default or self._default_agent is None:
             self._default_agent = agent.name
-            print(f"   → 设为默认Agent")
+            logger.info(f"Agent '{agent.name}' 设为默认Agent")
     
     def unregister_agent(self, agent_name: str) -> bool:
         """
@@ -61,8 +64,9 @@ class AgentManager:
             del self._agents[agent_name]
             if self._default_agent == agent_name:
                 self._default_agent = next(iter(self._agents.keys()), None)
-            print(f"✅ Agent '{agent_name}' 已注销")
+            logger.info(f"Agent '{agent_name}' 已注销")
             return True
+        logger.warning(f"尝试注销不存在的Agent: {agent_name}")
         return False
     
     def get_agent(self, agent_name: Optional[str] = None) -> Optional[BaseAgent]:
@@ -108,8 +112,9 @@ class AgentManager:
         """
         if agent_name in self._agents:
             self._session_agents[session_id] = agent_name
-            print(f"✅ 会话 {session_id} 切换到 Agent '{agent_name}'")
+            logger.info(f"会话 {session_id} 切换到 Agent '{agent_name}'")
             return True
+        logger.warning(f"会话 {session_id} 尝试切换到不存在的Agent: {agent_name}")
         return False
     
     def get_session_agent(self, session_id: str) -> Optional[BaseAgent]:
@@ -150,13 +155,15 @@ class AgentManager:
             agent = self.get_session_agent(session_id)
         
         if not agent:
+            error_msg = f"未找到可用的Agent"
+            logger.error(error_msg)
             await websocket.send_json({
                 "type": "error",
-                "message": f"未找到可用的Agent"
+                "message": error_msg
             })
             return
         
-        print(f"[AgentManager] 使用 Agent '{agent.name}' 处理请求")
+        logger.debug(f"使用 Agent '{agent.name}' 处理请求 (session: {session_id})")
         
         # 执行Agent
         await agent.run(websocket, session_id, user_input, messages)
@@ -177,6 +184,7 @@ class AgentManager:
             切换结果信息
         """
         if agent_name not in self._agents:
+            logger.warning(f"Agent '{agent_name}' 不存在")
             return {
                 "success": False,
                 "message": f"Agent '{agent_name}' 不存在",
@@ -185,6 +193,8 @@ class AgentManager:
         
         old_agent_name = self._session_agents.get(session_id, self._default_agent)
         self._session_agents[session_id] = agent_name
+        
+        logger.info(f"会话 {session_id} 从 '{old_agent_name}' 切换到 '{agent_name}'")
         
         return {
             "success": True,

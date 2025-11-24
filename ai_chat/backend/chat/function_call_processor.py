@@ -15,6 +15,9 @@ from fastapi import WebSocket
 
 from tools.registry import ToolRegistry
 from .session import SessionManager
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class FunctionCallProcessor:
@@ -79,10 +82,11 @@ class FunctionCallProcessor:
         try:
             # 多轮迭代处理
             for iteration in range(self.max_iterations):
-                print(f"[FunctionCallAgent] 迭代 {iteration + 1}/{self.max_iterations}")
+                logger.debug(f"[FunctionCallProcessor] 迭代 {iteration + 1}/{self.max_iterations} (session: {session_id})")
                 
                 # 检查取消信号
                 if self.session_manager.get_cancel_flag(session_id):
+                    logger.info(f"[FunctionCallProcessor] 收到取消信号 (session: {session_id})")
                     await websocket.send_json({
                         "type": "assistant_end",
                         "messageId": message_id
@@ -99,21 +103,22 @@ class FunctionCallProcessor:
                     websocket, session_id, messages, message_id, iteration
                 )
                 
-                print(f"[FunctionCallAgent] 迭代 {iteration + 1} 完成，是否有工具调用: {has_tool_calls}")
+                logger.debug(f"[FunctionCallProcessor] 迭代 {iteration + 1} 完成，有工具调用: {has_tool_calls}")
                 
                 # 如果没有工具调用，说明LLM已给出最终答案，结束循环
                 if not has_tool_calls:
-                    print(f"[FunctionCallAgent] LLM已返回最终答案，结束迭代")
+                    logger.info(f"[FunctionCallProcessor] LLM已返回最终答案，结束迭代 (session: {session_id})")
                     break
             
             # 发送结束信号
-            print(f"[FunctionCallAgent] 所有迭代完成，共 {iteration + 1} 次")
+            logger.info(f"[FunctionCallProcessor] 所有迭代完成，共 {iteration + 1} 次 (session: {session_id})")
             await websocket.send_json({
                 "type": "assistant_end",
                 "messageId": message_id
             })
         
         except asyncio.CancelledError:
+            logger.info(f"[FunctionCallProcessor] 任务被取消 (session: {session_id})")
             current_id = self.session_manager.get_current_message(session_id) or message_id
             await websocket.send_json({
                 "type": "assistant_end",
@@ -121,7 +126,7 @@ class FunctionCallProcessor:
             })
             return
         except Exception as e:
-            print(f"Error in FunctionCallProcessor: {e}")
+            logger.error(f"[FunctionCallProcessor] 处理错误 (session: {session_id}): {e}", exc_info=True)
             await websocket.send_json({
                 "type": "error",
                 "message": f"处理消息时出错: {str(e)}"
@@ -208,7 +213,7 @@ class FunctionCallProcessor:
         # 处理本次迭代的结果
         tool_calls = list(tool_calls_dict.values()) if tool_calls_dict else None
         
-        print(f"[FunctionCallAgent] 迭代 {iteration} - tool_calls: {len(tool_calls) if tool_calls else 0}, content: {len(content_buffer)} 字符")
+        logger.debug(f"[FunctionCallProcessor] 迭代 {iteration} - tool_calls: {len(tool_calls) if tool_calls else 0}, content: {len(content_buffer)} 字符")
         
         if tool_calls:
             # 有工具调用：保存assistant消息并执行工具

@@ -8,6 +8,9 @@ from fastapi import WebSocket
 from tools.registry import ToolRegistry
 from chat.session import SessionManager
 from .base_agent import BaseAgent
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class SimpleAgent(BaseAgent):
@@ -35,7 +38,7 @@ class SimpleAgent(BaseAgent):
             session_manager=session_manager,
             system_prompt=system_prompt
         )
-        print(f"✅ SimpleAgent '{self.name}' 已初始化")
+        logger.info(f"SimpleAgent '{self.name}' 已初始化")
     
     async def run(
         self,
@@ -144,7 +147,7 @@ class AnalysisAgent(BaseAgent):
             thinking_depth=thinking_depth
         )
         self.thinking_depth = thinking_depth
-        print(f"✅ AnalysisAgent '{self.name}' 已初始化 (思考深度: {thinking_depth})")
+        logger.info(f"AnalysisAgent '{self.name}' 已初始化 (思考深度: {thinking_depth})")
     
     async def run(
         self,
@@ -253,7 +256,7 @@ class CodeAgent(BaseAgent):
             max_iterations=max_iterations
         )
         self.max_iterations = max_iterations
-        print(f"✅ CodeAgent '{self.name}' 已初始化 (最大迭代: {max_iterations})")
+        logger.info(f"CodeAgent '{self.name}' 已初始化 (最大迭代: {max_iterations})")
     
     async def run(
         self,

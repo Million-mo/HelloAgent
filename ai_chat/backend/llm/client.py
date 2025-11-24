@@ -5,6 +5,9 @@ from openai import AsyncOpenAI
 from typing import Optional
 
 from config import LLMConfig
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class LLMClient:
@@ -29,6 +32,7 @@ class LLMClient:
             Initialized AsyncOpenAI client
         """
         if self._openai_client is None:
+            logger.info(f"初始化 OpenAI 客户端: {self.config.base_url}")
             # 创建自定义 HTTP 客户端用于连接复用
             self._http_client = httpx.AsyncClient()
             
@@ -38,6 +42,7 @@ class LLMClient:
                 base_url=self.config.base_url,
                 http_client=self._http_client
             )
+            logger.info(f"使用模型: {self.config.model}")
         
         return self._openai_client
     
@@ -66,9 +71,11 @@ class LLMClient:
     async def close(self) -> None:
         """Close HTTP client and release resources."""
         if self._http_client is not None:
+            logger.info("关闭 HTTP 客户端")
             await self._http_client.aclose()
             self._http_client = None
             self._openai_client = None
+            logger.debug("HTTP 客户端已释放")
     
     def __del__(self):
         """Cleanup on deletion."""
