@@ -193,21 +193,25 @@ class PlanningAgent(BaseAgent):
         default_prompt = """你是一个专业的任务规划助手(Planning Agent)。
 
 **你的核心职责:**
-1. 任务分解: 将用户的复杂需求分解为具体、可执行的子任务列表
-2. 依赖分析: 识别任务之间的依赖关系，确保执行顺序合理
-3. 优先级设定: 根据任务的重要性和紧急程度设置优先级
-4. 进度跟踪: 生成清晰的TodoList，便于跟踪任务进度
+1. 项目理解: 先分析当前项目环境、代码结构、已有文件等上下文信息
+2. 任务分解: 基于项目理解，将用户需求分解为具体、可执行的子任务
+3. 依赖分析: 识别任务之间的依赖关系，确保执行顺序合理
+4. 优先级设定: 根据任务的重要性和紧急程度设置优先级
+5. 进度跟踪: 生成清晰的TodoList，便于跟踪任务进度
 
 **重要原则:**
-- 你**只负责规划**，不直接执行任务
-- 不需要考虑由哪个Agent执行，系统会自动分配
-- 你可以使用工具(Function Call)获取信息来辅助规划
+- **先理解项目，再规划任务** - 这是最重要的原则
+- 你可以使用工具(list_directory, read_file等)分析项目结构
+- 基于项目实际情况制定合理的任务计划
+- 你只负责规划，不直接执行任务
+- 系统会自动分配Agent执行任务
 
-**任务分解原则:**
-- 每个子任务应该清晰、具体、可执行
-- 识别任务之间的依赖关系
-- 合理设置优先级
-- 生成结构化的TodoList
+**工作流程:**
+1. 接收用户需求
+2. 使用工具分析项目结构(list_directory, read_file)
+3. 理解现有代码和文件组织
+4. 基于项目上下文制定任务计划
+5. 生成结构化的TodoList
 
 请以结构化的方式规划任务，生成清晰的待办事项清单。"""
         
@@ -267,13 +271,28 @@ class PlanningAgent(BaseAgent):
         task_manager = self._get_task_manager(session_id)
         
         try:
-            # 第一步：使用LLM分析并规划任务
+            # 第一步：项目理解阶段 - 使用工具分析项目
             await websocket.send_json({
                 "type": "planning_start",
                 "messageId": message_id
             })
             
-            tasks = await self._plan_tasks(websocket, session_id, messages, message_id, user_input)
+            # 先进行项目分析，获取上下文信息
+            project_context = await self._analyze_project_context(
+                websocket, session_id, messages, message_id, user_input
+            )
+            
+            # 更新planning气泡状态为"正在生成任务计划..."
+            await websocket.send_json({
+                "type": "planning_status_update",
+                "messageId": message_id,
+                "status": "正在生成任务计划..."
+            })
+            
+            # 第二步：基于项目理解生成任务计划
+            tasks = await self._plan_tasks(
+                websocket, session_id, messages, message_id, user_input, project_context
+            )
             
             if not tasks:
                 await websocket.send_json({
@@ -325,34 +344,215 @@ class PlanningAgent(BaseAgent):
             self.session_manager.set_cancel_flag(session_id, False)
             self.session_manager.remove_current_message(session_id)
     
-    async def _plan_tasks(
+    async def _analyze_project_context(
         self,
         websocket: WebSocket,
         session_id: str,
         messages: List[Dict[str, Any]],
         message_id: str,
         user_input: str
+    ) -> str:
+        """
+        分析项目上下文 - 使用工具了解项目结构
+        
+        Returns:
+            项目上下文描述
+        """
+        logger.info(f"[{self.name}] 开始分析项目上下文")
+        
+        analysis_prompt = f"""用户需求: {user_input}
+
+在制定任务计划之前，请先分析当前项目环境。
+
+**分析步骤：**
+1. 使用 list_directory 工具查看当前目录结构
+2. 识别关键文件和目录
+3. 如有必要，使用 read_file 工具查看重要配置文件或代码文件
+4. 总结项目结构和技术栈
+
+**输出要求：**
+请用中文简洁描述项目情况，包括：
+- 项目类型（如：Python后端、React前端、AI应用等）
+- 关键目录和文件
+- 技术栈和框架
+- 与用户需求相关的现有代码
+
+开始分析项目..."""
+        
+        # 创建项目分析的消息历史
+        analysis_messages = messages.copy()
+        analysis_messages.append({"role": "user", "content": analysis_prompt})
+        
+        # 调用LLM进行项目分析（允许使用工具）
+        request_params = {
+            "model": self.llm_client.model,
+            "messages": analysis_messages,
+            "stream": True,
+            "tools": self.tool_registry.get_tools_definitions()  # 允许使用工具
+        }
+        
+        response = await self.llm_client.client.chat.completions.create(**request_params)
+        
+        # 处理流式响应（支持工具调用）
+        tool_calls_dict = {}
+        content_buffer = ""
+        max_tool_iterations = 5  # 最多允许5次工具调用
+        iteration = 0
+        
+        while iteration < max_tool_iterations:
+            async for chunk in response:
+                if self.session_manager.get_cancel_flag(session_id):
+                    return ""
+                
+                delta = chunk.choices[0].delta
+                
+                # 收集工具调用
+                if delta.tool_calls:
+                    for tool_call in delta.tool_calls:
+                        index = tool_call.index
+                        if index not in tool_calls_dict:
+                            tool_calls_dict[index] = {
+                                "id": tool_call.id,
+                                "type": tool_call.type or "function",
+                                "function": {"name": "", "arguments": ""}
+                            }
+                        
+                        if tool_call.function:
+                            if tool_call.function.name:
+                                tool_calls_dict[index]["function"]["name"] = tool_call.function.name
+                            if tool_call.function.arguments:
+                                tool_calls_dict[index]["function"]["arguments"] += tool_call.function.arguments
+                
+                # 收集内容
+                if delta.content:
+                    content_buffer += delta.content
+            
+            # 检查是否有工具调用
+            tool_calls = list(tool_calls_dict.values()) if tool_calls_dict else None
+            
+            if tool_calls:
+                # 保存assistant消息
+                analysis_messages.append({
+                    "role": "assistant",
+                    "content": content_buffer if content_buffer else None,
+                    "tool_calls": tool_calls
+                })
+                
+                # 通知前端工具调用开始
+                tool_names = [tc["function"]["name"] for tc in tool_calls]
+                await websocket.send_json({
+                    "type": "tool_calls_start",
+                    "tools": tool_names
+                })
+                
+                # 执行工具调用
+                for tool_call in tool_calls:
+                    tool_name = tool_call["function"]["name"]
+                    tool_args = tool_call["function"]["arguments"]
+                    
+                    logger.info(f"[{self.name}] 项目分析中调用工具: {tool_name}")
+                    
+                    # 执行工具
+                    tool_result = await self.tool_registry.execute_tool(tool_name, tool_args)
+                    
+                    # 通知前端工具调用结果
+                    await websocket.send_json({
+                        "type": "tool_call",
+                        "toolName": tool_name,
+                        "toolResult": tool_result
+                    })
+                    
+                    # 添加工具结果
+                    analysis_messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call["id"],
+                        "name": tool_name,
+                        "content": tool_result
+                    })
+                
+                # 继续对话，让LLM基于工具结果继续分析
+                iteration += 1
+                tool_calls_dict = {}
+                content_buffer = ""
+                
+                request_params["messages"] = analysis_messages
+                response = await self.llm_client.client.chat.completions.create(**request_params)
+            else:
+                # 没有工具调用，分析完成
+                break
+        
+        # 保存最终分析结果
+        if content_buffer:
+            analysis_messages.append({"role": "assistant", "content": content_buffer})
+        
+        logger.info(f"[{self.name}] 项目分析完成")
+        logger.debug(f"[{self.name}] 项目上下文: {content_buffer[:200]}...")
+        
+        # 向前端发送项目分析结果
+        if content_buffer:
+            analysis_msg_id = f"msg_{uuid.uuid4().hex[:8]}"
+            await websocket.send_json({
+                "type": "assistant_start",
+                "messageId": analysis_msg_id
+            })
+            await websocket.send_json({
+                "type": "assistant_chunk",
+                "messageId": analysis_msg_id,
+                "content": f"**📊 项目分析结果：**\n\n{content_buffer}"
+            })
+            await websocket.send_json({
+                "type": "assistant_end",
+                "messageId": analysis_msg_id
+            })
+        
+        return content_buffer if content_buffer else "无法获取项目上下文信息"
+    
+    async def _plan_tasks(
+        self,
+        websocket: WebSocket,
+        session_id: str,
+        messages: List[Dict[str, Any]],
+        message_id: str,
+        user_input: str,
+        project_context: str
     ) -> List[Task]:
         """
-        使用LLM规划任务
+        基于用户输入和项目上下文生成任务计划
+        
+        Args:
+            websocket: WebSocket连接
+            session_id: 会话ID
+            messages: 历史消息
+            message_id: 消息ID
+            user_input: 用户输入
+            project_context: 项目分析结果
         
         Returns:
             任务列表
         """
-        planning_prompt = f"""请将以下任务分解为具体的子任务：
+        planning_prompt = f"""现在你已经了解了项目情况：
 
+**项目分析结果:**
+{project_context}
+
+**用户需求:**
 {user_input}
+
+请基于以上项目分析结果，将用户需求分解为具体的子任务，并返回JSON格式的任务列表。
 
 **重要要求：**
 1. 必须严格按照JSON格式返回
 2. 不要添加任何解释性文字、markdown标记或其他内容
 3. 直接输出JSON对象，不要用```json```包裹
 4. 确保JSON格式正确，可以被直接解析
+5. **关键**: 任务规划要基于项目实际结构，而不是凭空想象
+6. 任务描述要具体、可执行，并考虑项目实际情况
+7. 合理设置任务优先级和依赖关系
 
 返回的JSON应包含一个tasks数组，每个任务包含以下字段：
 - id: 任务唯一标识（简短字符串，如task1、task2）
 - title: 任务标题（简洁明了）
-- description: 详细描述（具体可执行的内容）
+- description: 详细描述（具体可执行的内容，基于项目实际结构）
 - priority: 优先级（必须是: low、medium、high 或 critical）
 - dependencies: 依赖的任务ID列表（数组，如果没有依赖则为空数组[]）
 
@@ -363,15 +563,15 @@ class PlanningAgent(BaseAgent):
   "tasks": [
     {{
       "id": "task1",
-      "title": "需求分析",
-      "description": "分析用户的Python学习需求，明确学习目标和背景",
+      "title": "分析backend/agents/planning_agent.py",
+      "description": "查看planning_agent.py的实现，理解当前任务规划逻辑",
       "priority": "high",
       "dependencies": []
     }},
     {{
       "id": "task2",
-      "title": "制定学习计划",
-      "description": "基于需求分析结果，设计完整的Python学习路线和时间安排",
+      "title": "添加项目分析功能",
+      "description": "在planning_agent.py中添加_analyze_project_context方法",
       "priority": "high",
       "dependencies": ["task1"]
     }}

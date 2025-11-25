@@ -1,7 +1,7 @@
 """Tool registry for managing and executing tools."""
 
 import json
-from typing import Dict, List, Any, Optional, Callable
+from typing import Dict, List, Any, Optional
 from .base import BaseTool
 from utils.logger import get_logger
 
@@ -14,7 +14,6 @@ class ToolRegistry:
     def __init__(self):
         """Initialize tool registry."""
         self._tools: Dict[str, BaseTool] = {}
-        self._progress_callback: Optional[Callable] = None
     
     def register(self, tool: BaseTool) -> None:
         """
@@ -69,15 +68,6 @@ class ToolRegistry:
         """
         return [tool.to_openai_format() for tool in self._tools.values()]
     
-    def set_progress_callback(self, callback: Optional[Callable] = None) -> None:
-        """
-        设置进度回调函数
-        
-        Args:
-            callback: 进度回调函数，接收 (tool_name, status, progress) 参数
-        """
-        self._progress_callback = callback
-    
     async def execute_tool(self, tool_name: str, arguments_str: str) -> str:
         """
         Execute a tool with given arguments.
@@ -105,39 +95,18 @@ class ToolRegistry:
             logger.error(f"工具 {tool_name} 参数解析失败: {e}")
             return error_msg
         
-        # 通知工具执行开始
-        if self._progress_callback:
-            await self._progress_callback(tool_name, "executing", arguments)
-        
         # Execute tool
         try:
-            # 如果工具支持进度回调，传递给它
-            if hasattr(tool, 'set_progress_callback'):
-                tool.set_progress_callback(self._progress_callback)
-            
             result = await tool.execute(**arguments)
             logger.info(f"工具执行成功: {tool_name} -> {result[:100] if len(result) > 100 else result}")
-            
-            # 通知工具执行完成
-            if self._progress_callback:
-                await self._progress_callback(tool_name, "completed", None)
-            
             return result
         except TypeError as e:
             error_msg = f"错误：参数不匹配 - {str(e)}"
             logger.error(f"工具 {tool_name} 参数不匹配: {e}")
-            
-            if self._progress_callback:
-                await self._progress_callback(tool_name, "error", str(e))
-            
             return error_msg
         except Exception as e:
             error_msg = f"错误：工具执行失败 - {str(e)}"
             logger.error(f"工具 {tool_name} 执行失败: {e}", exc_info=True)
-            
-            if self._progress_callback:
-                await self._progress_callback(tool_name, "error", str(e))
-            
             return error_msg
     
     def tool_exists(self, tool_name: str) -> bool:

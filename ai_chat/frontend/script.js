@@ -235,9 +235,6 @@ class ChatApp {
             case 'tool_calls_start':
                 this.showToolCallsStart(data.tools);
                 break;
-            case 'tool_progress':
-                this.updateToolProgress(data.toolName, data.status, data.data);
-                break;
             case 'tool_call':
                 this.showToolCall(data.toolName, data.toolResult);
                 break;
@@ -253,7 +250,13 @@ class ChatApp {
                 // 不显示typing indicator，而是显示一个规划中的消息气泡
                 this.showPlanningMessage(data.messageId);
                 break;
+            case 'planning_status_update':
+                // 更新planning气泡状态
+                this.updatePlanningStatus(data.messageId, data.status);
+                break;
             case 'todo_list':
+                // 显示任务列表后移除planning气泡
+                this.removePlanningMessage(data.messageId);
                 this.createTodoList(data.messageId, data.tasks);
                 break;
             case 'todo_update':
@@ -430,6 +433,11 @@ class ChatApp {
 
     showToolCallsStart(tools) {
         const messagesArea = document.getElementById('messagesArea');
+        
+        // 不移除planning气泡，保留状态提示
+        // const planningDivs = messagesArea.querySelectorAll('[id^="planning_"]');
+        // planningDivs.forEach(div => div.remove());
+        
         // 创建独立的工具调用容器（不使用message气泡包装）
         const toolDiv = document.createElement('div');
         toolDiv.className = 'tool-call';
@@ -438,14 +446,17 @@ class ChatApp {
         
         // 为每个工具创建独立的折叠容器
         const toolsHtml = tools.map((tool, idx) => {
+            // 兼容字符串和对象格式
+            const toolName = typeof tool === 'string' ? tool : (tool.name || 'unknown');
+            const toolArgs = typeof tool === 'object' && tool.arguments ? tool.arguments : '{}';
             const toolId = `tool-${timestamp}-${idx}`;
-            const argsDisplay = tool.arguments ? this.formatToolArguments(tool.arguments) : '{}';
+            const argsDisplay = this.formatToolArguments(toolArgs);
             return `
-                <div class="tool-call-item" id="${toolId}" data-tool-name="${this.escapeHtml(tool.name)}" data-tool-index="${idx}">
+                <div class="tool-call-item" id="${toolId}" data-tool-name="${this.escapeHtml(toolName)}" data-tool-index="${idx}">
                     <div class="tool-call-header" onclick="window.chatApp.toggleToolCall('${toolId}')">
                         <div class="tool-call-title">
                             <i class="fas fa-tools fa-spin"></i>
-                            <span class="tool-name">${this.escapeHtml(tool.name)}</span>
+                            <span class="tool-name">${this.escapeHtml(toolName)}</span>
                             <span class="tool-status">调用中...</span>
                         </div>
                         <i class="fas fa-chevron-right toggle-icon"></i>
@@ -493,12 +504,6 @@ class ChatApp {
         }
         
         if (targetTool) {
-            // 移除进度显示（如果有）
-            const progressSection = targetTool.querySelector('.tool-progress-section');
-            if (progressSection) {
-                progressSection.remove();
-            }
-            
             // 更新现有工具的状态和结果
             const statusEl = targetTool.querySelector('.tool-status');
             const iconEl = targetTool.querySelector('.tool-call-title i');
@@ -544,177 +549,6 @@ class ChatApp {
             messagesArea.appendChild(toolDiv);
         }
         this.scrollToBottom();
-    }
-    
-    updateToolProgress(toolName, status, data) {
-        // 查找对应的工具调用项
-        const messagesArea = document.getElementById('messagesArea');
-        const toolItems = messagesArea.querySelectorAll('.tool-call-item');
-        let targetTool = null;
-        
-        for (let item of toolItems) {
-            const nameEl = item.querySelector('.tool-name');
-            const hasSuccess = item.classList.contains('success');
-            if (nameEl && nameEl.textContent === toolName && !hasSuccess) {
-                targetTool = item;
-                break;
-            }
-        }
-        
-        if (!targetTool) return;
-        
-        const statusEl = targetTool.querySelector('.tool-status');
-        const iconEl = targetTool.querySelector('.tool-call-title i');
-        
-        if (status === 'executing') {
-            // 工具开始执行
-            if (statusEl) {
-                if (toolName === 'write_file') {
-                    // 显示文件名
-                    const fileName = data && data.file_path ? this.getFileName(data.file_path) : '';
-                    statusEl.textContent = fileName ? `正在写入: ${fileName}` : '正在写入文件...';
-                    
-                    // 在工具调用体中添加文件信息
-                    const toolBody = targetTool.querySelector('.tool-call-body');
-                    if (toolBody && data && data.file_path) {
-                        let fileInfoSection = targetTool.querySelector('.tool-file-info-section');
-                        if (!fileInfoSection) {
-                            fileInfoSection = document.createElement('div');
-                            fileInfoSection.className = 'tool-call-section tool-file-info-section';
-                            fileInfoSection.innerHTML = `
-                                <div class="tool-section-label">
-                                    <i class="fas fa-file"></i>
-                                    <strong>文件信息</strong>
-                                </div>
-                                <div class="file-info-content">
-                                    <div class="file-info-item">
-                                        <span class="file-info-label">文件路径:</span>
-                                        <span class="file-info-value">${this.escapeHtml(data.file_path)}</span>
-                                    </div>
-                                </div>
-                            `;
-                            toolBody.insertBefore(fileInfoSection, toolBody.firstChild);
-                            fileInfoSection.style.display = 'block';
-                            
-                            // 展开工具调用详情
-                            toolBody.style.display = 'block';
-                            const toggleIcon = targetTool.querySelector('.toggle-icon');
-                            if (toggleIcon) {
-                                toggleIcon.className = 'fas fa-chevron-down toggle-icon';
-                            }
-                        }
-                    }
-                } else if (toolName === 'read_file') {
-                    statusEl.textContent = '正在读取文件...';
-                } else if (toolName === 'execute_command') {
-                    statusEl.textContent = '正在执行命令...';
-                } else {
-                    statusEl.textContent = '执行中...';
-                }
-            }
-        } else if (status === 'writing' && data) {
-            // 文件写入进度
-            let progressSection = targetTool.querySelector('.tool-progress-section');
-            
-            if (!progressSection) {
-                // 创建进度显示区域
-                const toolBody = targetTool.querySelector('.tool-call-body');
-                progressSection = document.createElement('div');
-                progressSection.className = 'tool-call-section tool-progress-section';
-                const fileName = data.file_path ? this.getFileName(data.file_path) : '文件';
-                progressSection.innerHTML = `
-                    <div class="tool-section-label">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <strong>正在写入: ${this.escapeHtml(fileName)}</strong>
-                    </div>
-                    <div class="tool-progress-content">
-                        <div class="progress-info">
-                            <span class="progress-label">写入进度:</span>
-                            <span class="progress-percentage">0%</span>
-                        </div>
-                        <div class="progress-bar-container">
-                            <div class="progress-bar" style="width: 0%"></div>
-                        </div>
-                        <div class="progress-details">
-                            <span class="progress-text">0 B / 0 B</span>
-                        </div>
-                    </div>
-                `;
-                toolBody.insertBefore(progressSection, toolBody.firstChild);
-                progressSection.style.display = 'block';
-                
-                // 展开工具调用详情
-                toolBody.style.display = 'block';
-                const toggleIcon = targetTool.querySelector('.toggle-icon');
-                if (toggleIcon) {
-                    toggleIcon.className = 'fas fa-chevron-down toggle-icon';
-                }
-            }
-            
-            // 更新进度条
-            if (data.progress !== undefined) {
-                const progressBar = progressSection.querySelector('.progress-bar');
-                const progressPercentage = progressSection.querySelector('.progress-percentage');
-                const progressText = progressSection.querySelector('.progress-text');
-                
-                if (progressBar) {
-                    progressBar.style.width = `${data.progress}%`;
-                }
-                if (progressPercentage) {
-                    progressPercentage.textContent = `${data.progress}%`;
-                }
-                if (progressText) {
-                    const written = this.formatSize(data.written || 0);
-                    const total = this.formatSize(data.total_size || 0);
-                    progressText.textContent = `${written} / ${total}`;
-                }
-            }
-            
-            if (statusEl) {
-                const fileName = data.file_path ? this.getFileName(data.file_path) : '文件';
-                statusEl.textContent = `写入中: ${fileName} (${data.progress || 0}%)`;
-            }
-        } else if (status === 'completed') {
-            // 工具执行完成
-            if (statusEl) {
-                if (toolName === 'write_file') {
-                    statusEl.textContent = '✓ 写入完成';
-                } else {
-                    statusEl.textContent = '完成';
-                }
-            }
-            if (iconEl) iconEl.className = 'fas fa-check-circle';
-            
-            // 移除进度区域的动画图标
-            const progressSection = targetTool.querySelector('.tool-progress-section');
-            if (progressSection) {
-                const spinIcon = progressSection.querySelector('.fa-spinner');
-                if (spinIcon) {
-                    spinIcon.className = 'fas fa-check-circle';
-                }
-            }
-        } else if (status === 'error') {
-            // 工具执行错误
-            if (statusEl) statusEl.textContent = '✗ 失败';
-            if (iconEl) iconEl.className = 'fas fa-exclamation-circle';
-            targetTool.classList.add('error');
-        }
-        
-        this.scrollToBottom();
-    }
-    
-    getFileName(filePath) {
-        // 从文件路径中提取文件名
-        if (!filePath) return '';
-        const parts = filePath.replace(/\\/g, '/').split('/');
-        return parts[parts.length - 1];
-    }
-    
-    formatSize(bytes) {
-        if (bytes < 1024) return bytes + ' B';
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-        if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-        return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
     }
 
     addTypingIndicator() {
@@ -1217,7 +1051,7 @@ class ChatApp {
                 <div class="message-text">
                     <div class="planning-indicator">
                         <i class="fas fa-spinner fa-spin"></i>
-                        <span>正在分析任务并生成计划...</span>
+                        <span class="planning-status">正在分析项目...</span>
                     </div>
                 </div>
             </div>
@@ -1225,6 +1059,23 @@ class ChatApp {
         
         messagesArea.appendChild(planningDiv);
         this.scrollToBottom();
+    }
+    
+    updatePlanningStatus(messageId, status) {
+        const planningDiv = document.getElementById(`planning_${messageId}`);
+        if (planningDiv) {
+            const statusSpan = planningDiv.querySelector('.planning-status');
+            if (statusSpan) {
+                statusSpan.textContent = status;
+            }
+        }
+    }
+    
+    removePlanningMessage(messageId) {
+        const planningDiv = document.getElementById(`planning_${messageId}`);
+        if (planningDiv) {
+            planningDiv.remove();
+        }
     }
     
     updateTodoItem(taskId, status, result, error) {
