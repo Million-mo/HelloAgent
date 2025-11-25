@@ -8,12 +8,14 @@ from fastapi import WebSocket
 from tools.registry import ToolRegistry
 from chat.session import SessionManager
 from .base_agent import BaseAgent
+from .memory_mixin import MemoryMixin
+from .memory import MemoryType, MemoryImportance
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-class FunctionCallAgent(BaseAgent):
+class FunctionCallAgent(MemoryMixin, BaseAgent):
     """
     Function Call Agent - 基于OpenAI Function Calling的Agent
     
@@ -53,6 +55,10 @@ class FunctionCallAgent(BaseAgent):
             system_prompt=system_prompt,
             max_iterations=max_iterations
         )
+        
+        # 初始化记忆功能
+        self._init_memory(max_short_term_memories=50, max_long_term_memories=100)
+        
         self.max_iterations = max_iterations
         
         logger.info(f"FunctionCallAgent '{self.name}' 已初始化")
