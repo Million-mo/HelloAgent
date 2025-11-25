@@ -2,6 +2,7 @@
 
 import asyncio
 import subprocess
+from pathlib import Path
 from typing import Dict, Any
 from .base import BaseTool
 
@@ -9,13 +10,15 @@ from .base import BaseTool
 class TerminalTool(BaseTool):
     """Tool for executing terminal commands."""
     
-    def __init__(self, timeout: int = 30):
+    def __init__(self, working_dir: str = ".", timeout: int = 30):
         """
         Initialize terminal tool.
         
         Args:
+            working_dir: Working directory for command execution
             timeout: Command execution timeout in seconds
         """
+        self.working_dir = Path(working_dir).expanduser().resolve()
         self.timeout = timeout
     
     @property
@@ -24,7 +27,7 @@ class TerminalTool(BaseTool):
     
     @property
     def description(self) -> str:
-        return "Execute a shell command in the terminal. Use this to run commands, check system info, list files, etc."
+        return "Execute a shell command in the terminal in the working directory. Use this to run commands, check system info, list files, etc."
     
     @property
     def parameters(self) -> Dict[str, Any]:
@@ -61,7 +64,8 @@ class TerminalTool(BaseTool):
                 command,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                shell=True
+                shell=True,
+                cwd=str(self.working_dir)
             )
             
             # 等待命令完成，带超时

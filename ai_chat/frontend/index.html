@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI智能助手 - 多轮对话</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Markdown 渲染和代码高亮 -->
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.0.0/dist/markdown-it.min.js"></script>
@@ -30,7 +30,8 @@
                         </label>
                         <select id="agentSelect" class="agent-select">
                             <option value="通用助理">通用助理</option>
-                            <option value="任务规划师">任务规划师</option>
+                            <!-- <option value="任务规划师">任务规划师</option>-->
+                            <!-- <option value="标记解析助理">标记解析助理</option>-->
                         </select>
                     </div>
                     <span id="status" class="status">
@@ -89,6 +90,6 @@
         </div>
     </footer>
 
-    <script src="script.js"></script>
+    <script type="module" src="js/main.js"></script>
 </body>
 </html>

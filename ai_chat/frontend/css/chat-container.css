@@ -1,0 +1,47 @@
+/* 聊天容器和消息区域 */
+
+.main {
+    flex: 1;
+    padding: 2rem 0;
+    overflow: hidden;
+}
+
+.chat-container {
+    background: var(--bg-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-xl);
+    height: calc(100vh - 200px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--border-light);
+}
+
+.messages-area {
+    flex: 1;
+    padding: 1.75rem;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    background: linear-gradient(to bottom, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+}
+
+.messages-area::-webkit-scrollbar {
+    width: 8px;
+}
+
+.messages-area::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+    border-radius: 4px;
+    margin: 4px 0;
+}
+
+.messages-area::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--primary-color), var(--primary-hover));
+    border-radius: 4px;
+    transition: all var(--transition-base);
+}
+
+.messages-area::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, var(--primary-hover), #1d4ed8);
+    box-shadow: 0 0 6px rgba(59, 130, 246, 0.5);
+}

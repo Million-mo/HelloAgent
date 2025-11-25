@@ -1,0 +1,317 @@
+/* React Agent 样式 */
+
+/* React 容器 */
+.react-container .message-content {
+    max-width: 92%;
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+    border: 1.5px solid var(--border-color);
+    box-shadow: var(--shadow-lg);
+}
+
+.react-container .message-header {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+    font-size: 0.9375rem;
+    margin-bottom: 1rem;
+}
+
+/* React 步骤容器 */
+.react-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-top: 1.25rem;
+}
+
+/* 单个 React 步骤 */
+.react-step {
+    background: var(--bg-secondary);
+    border: 1.5px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    transition: all var(--transition-slow);
+    box-shadow: var(--shadow-sm);
+}
+
+.react-step:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateX(4px);
+}
+
+.react-step.completed {
+    border-color: var(--success-color);
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+/* 步骤头部 */
+.react-step-header {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    font-weight: 700;
+    font-size: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--border-light);
+}
+
+.react-step-header i {
+    font-size: 1.125rem;
+}
+
+/* 步骤内容 */
+.react-step-content {
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+    margin-bottom: 0.75rem;
+    font-style: italic;
+}
+
+/* Thought 区域 */
+.react-thought {
+    margin: 0.75rem 0;
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-left: 4px solid #3b82f6;
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-base);
+}
+
+.react-thought:hover {
+    box-shadow: var(--shadow-md);
+    border-left-width: 5px;
+}
+
+.react-thought .react-label {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    color: #3b82f6;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    font-size: 0.9375rem;
+}
+
+.react-thought .react-label i {
+    font-size: 1.125rem;
+}
+
+.react-thought .react-text {
+    color: var(--text-primary);
+    line-height: 1.7;
+    font-size: 0.9375rem;
+}
+
+/* Action 区域 */
+.react-action {
+    margin: 0.75rem 0;
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-left: 4px solid var(--warning-color);
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-base);
+}
+
+.react-action:hover {
+    box-shadow: var(--shadow-md);
+    border-left-width: 5px;
+}
+
+.react-action .react-label {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    color: var(--warning-color);
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    font-size: 0.9375rem;
+}
+
+.react-action .react-label i {
+    font-size: 1.125rem;
+}
+
+.react-action .react-text {
+    color: var(--text-primary);
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+    line-height: 1.7;
+    font-size: 0.9375rem;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 0.375rem;
+}
+
+/* Observation 区域 */
+.react-observation {
+    margin: 0.75rem 0;
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border-left: 4px solid var(--success-color);
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-base);
+}
+
+.react-observation:hover {
+    box-shadow: var(--shadow-md);
+    border-left-width: 5px;
+}
+
+.react-observation .react-label {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    color: var(--success-color);
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    font-size: 0.9375rem;
+}
+
+.react-observation .react-label i {
+    font-size: 1.125rem;
+}
+
+.react-observation .react-text {
+    color: var(--text-primary);
+    line-height: 1.7;
+    font-size: 0.9375rem;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 0.375rem;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+}
+
+/* 工具调用 */
+.react-tool-call {
+    margin: 0.75rem 0;
+    padding: 1rem;
+    background: linear-gradient(135deg, #cffafe 0%, #a5f3fc 100%);
+    border: 1.5px solid #06b6d4;
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-base);
+}
+
+.react-tool-call:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.react-tool-call.success {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.react-tool-call.error {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.react-tool-call .react-label {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    font-size: 0.9375rem;
+}
+
+.react-tool-call .react-label i {
+    font-size: 1.125rem;
+}
+
+.react-tool-call .tool-input,
+.react-tool-call .tool-result,
+.react-tool-call .tool-error {
+    font-size: 0.9375rem;
+    color: var(--text-primary);
+    margin-top: 0.75rem;
+    padding: 0.875rem 1rem;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 0.375rem;
+    word-break: break-word;
+    line-height: 1.6;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.react-tool-call.success .react-label {
+    color: var(--success-color);
+}
+
+.react-tool-call.error .react-label {
+    color: var(--error-color);
+}
+
+.react-tool-call .react-label {
+    color: var(--info-color);
+}
+
+/* 最终答案 */
+.react-final-answer {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #bbf7d0 100%);
+    border: 2px solid var(--success-color);
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow-lg), 0 0 0 3px rgba(16, 185, 129, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.react-final-answer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--success-color), #34d399, var(--success-color));
+    animation: shimmer 2s infinite;
+}
+
+.react-finish-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--success-color);
+    margin-bottom: 1.25rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.react-finish-header i {
+    font-size: 1.5rem;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.react-finish-content {
+    color: var(--text-primary);
+    line-height: 1.8;
+    font-size: 1rem;
+}
+
+/* 标签样式 */
+.react-label {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.react-label i {
+    font-size: 1rem;
+}
+
+.react-text {
+    font-size: 0.9375rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+}

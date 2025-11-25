@@ -10,13 +10,15 @@ from .base import BaseTool
 class ReadFileTool(BaseTool):
     """Tool for reading file contents."""
     
-    def __init__(self, max_size: int = 1024 * 1024):  # 1MB default
+    def __init__(self, base_dir: str = ".", max_size: int = 1024 * 1024):  # 1MB default
         """
         Initialize read file tool.
         
         Args:
+            base_dir: Base directory for relative paths
             max_size: Maximum file size to read in bytes
         """
+        self.base_dir = Path(base_dir).expanduser().resolve()
         self.max_size = max_size
     
     @property
@@ -34,7 +36,7 @@ class ReadFileTool(BaseTool):
             "properties": {
                 "file_path": {
                     "type": "string",
-                    "description": "Path to the file to read (absolute or relative)"
+                    "description": "Path to the file to read (absolute or relative to working directory)"
                 }
             },
             "required": ["file_path"]
@@ -45,7 +47,7 @@ class ReadFileTool(BaseTool):
         Read file contents.
         
         Args:
-            file_path: Path to file
+            file_path: Path to file (absolute or relative to base_dir)
             **kwargs: Additional arguments (ignored)
             
         Returns:
@@ -53,6 +55,12 @@ class ReadFileTool(BaseTool):
         """
         try:
             path = Path(file_path).expanduser()
+            
+            # 如果是相对路径，则相对于base_dir
+            if not path.is_absolute():
+                path = self.base_dir / path
+            
+            path = path.resolve()
             
             # 检查文件是否存在
             if not path.exists():
@@ -83,6 +91,15 @@ class ReadFileTool(BaseTool):
 class WriteFileTool(BaseTool):
     """Tool for writing content to files."""
     
+    def __init__(self, base_dir: str = "."):
+        """
+        Initialize write file tool.
+        
+        Args:
+            base_dir: Base directory for relative paths
+        """
+        self.base_dir = Path(base_dir).expanduser().resolve()
+    
     @property
     def name(self) -> str:
         return "write_file"
@@ -98,7 +115,7 @@ class WriteFileTool(BaseTool):
             "properties": {
                 "file_path": {
                     "type": "string",
-                    "description": "Path to the file to write"
+                    "description": "Path to the file to write (absolute or relative to working directory)"
                 },
                 "content": {
                     "type": "string",
@@ -113,7 +130,7 @@ class WriteFileTool(BaseTool):
         Write content to file.
         
         Args:
-            file_path: Path to file
+            file_path: Path to file (absolute or relative to base_dir)
             content: Content to write
             **kwargs: Additional arguments (ignored)
             
@@ -122,6 +139,12 @@ class WriteFileTool(BaseTool):
         """
         try:
             path = Path(file_path).expanduser()
+            
+            # 如果是相对路径，则相对于base_dir
+            if not path.is_absolute():
+                path = self.base_dir / path
+            
+            path = path.resolve()
             
             # 创建父目录（如果不存在）
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -141,6 +164,15 @@ class WriteFileTool(BaseTool):
 class ListDirectoryTool(BaseTool):
     """Tool for listing directory contents."""
     
+    def __init__(self, base_dir: str = "."):
+        """
+        Initialize list directory tool.
+        
+        Args:
+            base_dir: Base directory for relative paths
+        """
+        self.base_dir = Path(base_dir).expanduser().resolve()
+    
     @property
     def name(self) -> str:
         return "list_directory"
@@ -156,7 +188,7 @@ class ListDirectoryTool(BaseTool):
             "properties": {
                 "directory_path": {
                     "type": "string",
-                    "description": "Path to the directory to list (defaults to current directory if not specified)"
+                    "description": "Path to the directory to list (absolute or relative to working directory, defaults to working directory if not specified)"
                 }
             },
             "required": []
@@ -167,7 +199,7 @@ class ListDirectoryTool(BaseTool):
         List directory contents.
         
         Args:
-            directory_path: Path to directory
+            directory_path: Path to directory (absolute or relative to base_dir)
             **kwargs: Additional arguments (ignored)
             
         Returns:
@@ -175,6 +207,12 @@ class ListDirectoryTool(BaseTool):
         """
         try:
             path = Path(directory_path).expanduser()
+            
+            # 如果是相对路径，则相对于base_dir
+            if not path.is_absolute():
+                path = self.base_dir / path
+            
+            path = path.resolve()
             
             if not path.exists():
                 return f"错误：目录不存在 '{directory_path}'"

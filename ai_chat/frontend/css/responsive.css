@@ -1,0 +1,117 @@
+/* 响应式设计 */
+
+@media (max-width: 768px) {
+    .container {
+        padding: 0 0.75rem;
+    }
+    
+    .message-content {
+        max-width: 90%;
+        padding: 0.875rem 1rem;
+        font-size: 0.875rem;
+    }
+    
+    .header-content {
+        flex-direction: column;
+        gap: 0.75rem;
+        text-align: center;
+    }
+    
+    .header-actions {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .chat-container {
+        height: calc(100vh - 220px);
+        border-radius: 0.5rem;
+    }
+    
+    .messages-area {
+        padding: 1rem;
+    }
+    
+    .input-container {
+        gap: 0.5rem;
+    }
+    
+    .send-btn {
+        min-width: 100px;
+        padding: 0.75rem 1rem;
+    }
+    
+    .send-btn span {
+        display: none;
+    }
+    
+    .tool-call-content {
+        max-width: 95%;
+        padding: 0;
+    }
+    
+    .tool-call-header {
+        padding: 0.875rem 1rem;
+    }
+    
+    .tool-call-title {
+        font-size: 0.875rem;
+        gap: 0.5rem;
+    }
+    
+    .tool-call-body {
+        padding: 0 1rem 0.875rem 1rem;
+    }
+    
+    .tool-arguments,
+    .tool-result-content {
+        font-size: 0.8125rem;
+        padding: 0.75rem 0.875rem;
+    }
+    
+    .react-step {
+        padding: 1rem;
+    }
+    
+    .react-thought,
+    .react-action,
+    .react-observation {
+        padding: 0.875rem 1rem;
+        margin: 0.625rem 0;
+    }
+    
+    .react-container .message-content {
+        max-width: 95%;
+    }
+}
+
+@media (max-width: 480px) {
+    .header {
+        padding: 0.75rem 0;
+    }
+    
+    .logo h1 {
+        font-size: 1.25rem;
+    }
+    
+    .message-content {
+        max-width: 95%;
+        padding: 0.75rem 0.875rem;
+    }
+    
+    .message-header {
+        font-size: 0.75rem;
+    }
+    
+    .message-text {
+        font-size: 0.875rem;
+    }
+    
+    .input-area {
+        padding: 0.75rem 1rem;
+    }
+    
+    .message-input {
+        font-size: 0.875rem;
+        padding: 0.625rem 0.875rem;
+    }
+}

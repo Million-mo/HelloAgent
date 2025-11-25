@@ -33,8 +33,6 @@ class AgentManager:
         self._default_agent: Optional[str] = None
         self._session_agents: Dict[str, str] = {}  # session_id -> agent_name
         
-        logger.info("AgentManager 已初始化")
-    
     def register_agent(self, agent: BaseAgent, is_default: bool = False) -> None:
         """
         注册Agent

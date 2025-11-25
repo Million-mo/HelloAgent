@@ -1,0 +1,154 @@
+/* 代码块样式 */
+
+/* 代码块容器 */
+.message-text .code-wrapper {
+    background: #0b0f14;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 12px 0;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 12px rgba(11, 15, 20, 0.25);
+    position: relative;
+}
+
+.message-text .code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    min-height: 40px;
+}
+
+.message-text .code-lang {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 13px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.message-text .copy-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    height: auto;
+    box-sizing: border-box;
+}
+
+.message-text .copy-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.message-text .copy-btn:active {
+    transform: scale(0.98);
+}
+
+.message-text .copy-btn.copied {
+    background: #10b981;
+    color: white;
+    transform: none;
+}
+
+/* 代码体容器 */
+.message-text .code-body {
+    background: #0b0f14;
+    overflow: auto;
+    line-height: 1;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.message-text .code-body::-webkit-scrollbar {
+    display: none;
+}
+
+/* 代码 pre 样式 */
+.message-text .code-body pre {
+    margin: 0 !important;
+    padding: 0px 0px !important;
+    background: transparent !important;
+    overflow-x: auto !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Source Code Pro", monospace !important;
+    font-size: 14px !important;
+    line-height: 1.45 !important;
+    color: #e6edf3 !important;
+}
+
+/* 代码行样式 */
+.message-text .code-body .line {
+    display: flex;
+    min-height: 1.45em;
+    align-items: flex-start;
+}
+
+/* 行号样式 */
+.message-text .code-body .line-number {
+    width: auto !important;
+    min-width: 0 !important;
+    padding-left: 16px !important;
+    padding-right: 20px !important;
+    margin-right: 0 !important;
+    flex-shrink: 0;
+    flex-grow: 0 !important;
+    display: inline-block !important;
+    user-select: none;
+    color: rgba(255, 255, 255, 0.3);
+    text-align: right;
+    font-size: 13px;
+}
+
+/* 行内容样式 */
+.message-text .code-body .line-content {
+    white-space: pre;
+    flex: 1;
+    min-width: 0;
+}
+
+/* 处理空行 */
+.message-text .code-body .line .line-content:empty::after {
+    content: "";
+    display: inline-block;
+    width: 0;
+    height: 0;
+}
+
+/* 行内代码样式 */
+.message-text code {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 1em;
+}
+
+.message-text .code-body pre code {
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    color: inherit;
+    display: block;
+    line-height: inherit;
+}
+
+.message-text :not(pre) > code {
+    background: rgba(0, 0, 0, 0.05);
+    padding: 0.2em 0.4em;
+    border-radius: 0.3rem;
+    color: var(--primary-color);
+    font-size: 0.95em;
+    font-weight: 500;
+}
+
+.message.user .message-text :not(pre) > code {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}

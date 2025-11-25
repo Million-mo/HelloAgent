@@ -14,4 +14,5 @@ __all__ = [
     "AnalysisAgent",
     "CodeAgent",
     "PlanningAgent",
+    "ToolAwareAgent",
 ]

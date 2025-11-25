@@ -1,0 +1,203 @@
+/* TodoList 样式 (Planning Agent) */
+
+.todo-list {
+    background: var(--bg-elevated);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.todo-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.todo-header h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.todo-progress {
+    background: var(--primary-light);
+    color: var(--primary-color);
+    padding: 0.375rem 0.875rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.todo-item {
+    display: flex;
+    gap: 0.875rem;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    background: white;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-light);
+    transition: all var(--transition-base);
+}
+
+.todo-item:hover {
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-sm);
+    transform: translateX(2px);
+}
+
+.todo-item:last-child {
+    margin-bottom: 0;
+}
+
+.todo-checkbox {
+    flex-shrink: 0;
+    display: flex;
+    align-items: flex-start;
+    padding-top: 0.125rem;
+}
+
+.todo-checkbox i {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    transition: all var(--transition-base);
+}
+
+.todo-item[data-status="in_progress"] .todo-checkbox i {
+    color: var(--info-color);
+}
+
+.todo-item[data-status="completed"] .todo-checkbox i {
+    color: var(--success-color);
+}
+
+.todo-item[data-status="failed"] .todo-checkbox i {
+    color: var(--error-color);
+}
+
+.todo-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.todo-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.task-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.task-agent {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.625rem;
+    background: var(--info-light);
+    color: var(--info-color);
+    border-radius: 0.375rem;
+    font-weight: 500;
+}
+
+.todo-description {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 0.5rem;
+}
+
+.task-depends {
+    display: inline-block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    background: var(--bg-primary);
+    padding: 0.25rem 0.625rem;
+    border-radius: 0.375rem;
+    margin-top: 0.25rem;
+}
+
+.task-result {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: var(--success-light);
+    border-left: 3px solid var(--success-color);
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.task-error {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: var(--error-light);
+    border-left: 3px solid var(--error-color);
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    color: var(--error-color);
+}
+
+/* 优先级样式 */
+.priority-critical {
+    border-left: 3px solid var(--error-color);
+}
+
+.priority-high {
+    border-left: 3px solid var(--warning-color);
+}
+
+.priority-medium {
+    border-left: 3px solid var(--info-color);
+}
+
+.priority-low {
+    border-left: 3px solid var(--text-muted);
+}
+
+/* 状态样式 */
+.todo-in-progress {
+    background: linear-gradient(to right, white, var(--info-light));
+    animation: pulse-slow 2s ease-in-out infinite;
+}
+
+.todo-completed {
+    opacity: 0.7;
+}
+
+.todo-failed {
+    background: linear-gradient(to right, white, var(--error-light));
+}
+
+@keyframes pulse-slow {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.85; }
+}
+
+/* Planning indicator */
+.planning-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: linear-gradient(to right, var(--info-light), var(--bg-elevated));
+    border-radius: 0.5rem;
+    border-left: 3px solid var(--info-color);
+    animation: pulse-slow 2s ease-in-out infinite;
+}
+
+.planning-indicator i {
+    font-size: 1.25rem;
+    color: var(--info-color);
+}
+
+.planning-indicator span {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}

@@ -111,6 +111,7 @@ function_call_agent = FunctionCallAgent(
 agent_manager.register_agent(function_call_agent, is_default=True)
 logger.info("FunctionCallAgent 已注册为默认 Agent")
 
+
 # # 2. SimpleAgent - 纯对话Agent
 # simple_agent = SimpleAgent(
 #     name="简单对话",
@@ -144,17 +145,17 @@ logger.info("FunctionCallAgent 已注册为默认 Agent")
 # agent_manager.register_agent(code_agent)
 # logger.info("CodeAgent 已注册")
 
-# 5. PlanningAgent - 任务规划Agent
-planning_agent = PlanningAgent(
-    name="任务规划师",
-    llm_client=llm_client,
-    tool_registry=tool_registry,
-    session_manager=session_manager,
-    agent_manager=agent_manager,
-    max_iterations=20,
-)
-agent_manager.register_agent(planning_agent)
-logger.info("PlanningAgent 已注册")
+# # 5. PlanningAgent - 任务规划Agent
+# planning_agent = PlanningAgent(
+#     name="任务规划师",
+#     llm_client=llm_client,
+#     tool_registry=tool_registry,
+#     session_manager=session_manager,
+#     agent_manager=agent_manager,
+#     max_iterations=20,
+# )
+# agent_manager.register_agent(planning_agent)
+# logger.info("PlanningAgent 已注册")
 
 # 输出 Agent 系统统计
 stats = agent_manager.get_stats()
@@ -169,23 +170,23 @@ message_processor = MessageProcessor(
 logger.info("消息处理器已初始化")
 
 # 初始化 React Agent 处理器
-react_agent_processor = ReactAgentProcessor(
-    llm_client=llm_client,
-    tool_registry=tool_registry,
-    session_manager=session_manager,
-    max_steps=10,  # 最大执行步数
-)
-logger.info("React Agent 处理器已初始化")
+# react_agent_processor = ReactAgentProcessor(
+#     llm_client=llm_client,
+#     tool_registry=tool_registry,
+#     session_manager=session_manager,
+#     max_steps=10,  # 最大执行步数
+# )
+# logger.info("React Agent 处理器已初始化")
 
-# 初始化 Function Call Agent 处理器
-function_call_processor = FunctionCallProcessor(
-    llm_client=llm_client,
-    tool_registry=tool_registry,
-    session_manager=session_manager,
-    max_iterations=10,  # 最大迭代次数
-)
-logger.info("Function Call 处理器已初始化")
-logger.info("\n=== 系统初始化完成 ===")
+# # 初始化 Function Call Agent 处理器
+# function_call_processor = FunctionCallProcessor(
+#     llm_client=llm_client,
+#     tool_registry=tool_registry,
+#     session_manager=session_manager,
+#     max_iterations=10,  # 最大迭代次数
+# )
+# logger.info("Function Call 处理器已初始化")
+# logger.info("\n=== 系统初始化完成 ===")
 
 # --- 6. 路由和事件处理 ---
 
@@ -274,22 +275,22 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                             websocket, session_id, user_input, messages, agent_name
                         )
                     )
-                elif mode == "function_call":
-                    # 使用 Function Call Agent 处理器（原生Function Calling，自动多轮）
-                    logger.info(f"[会话 {session_id}] 使用 Function Call 模式")
-                    task = asyncio.create_task(
-                        function_call_processor.process_streaming(
-                            websocket, session_id, user_input, messages
-                        )
-                    )
-                elif mode == "react":
-                    # 使用 React Agent 处理器（Reasoning + Action 模式）
-                    logger.info(f"[会话 {session_id}] 使用 React 模式")
-                    task = asyncio.create_task(
-                        react_agent_processor.process_streaming(
-                            websocket, session_id, user_input, messages
-                        )
-                    )
+                # elif mode == "function_call":
+                #     # 使用 Function Call Agent 处理器（原生Function Calling，自动多轮）
+                #     logger.info(f"[会话 {session_id}] 使用 Function Call 模式")
+                #     task = asyncio.create_task(
+                #         function_call_processor.process_streaming(
+                #             websocket, session_id, user_input, messages
+                #         )
+                #     )
+                # elif mode == "react":
+                #     # 使用 React Agent 处理器（Reasoning + Action 模式）
+                #     logger.info(f"[会话 {session_id}] 使用 React 模式")
+                #     task = asyncio.create_task(
+                #         react_agent_processor.process_streaming(
+                #             websocket, session_id, user_input, messages
+                #         )
+                #     )
                 else:
                     # 使用简单处理器（单次工具调用）
                     logger.info(f"[会话 {session_id}] 使用 Simple 模式")
