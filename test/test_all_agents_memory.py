@@ -111,7 +111,8 @@ async def main():
         llm_client=llm_client,
         tool_registry=tool_registry,
         session_manager=session_manager,
-        max_iterations=5
+        max_iterations=5,
+        enable_memory=True  # 启用记忆功能
     )
     await test_agent_memory(function_agent, "FunctionCallAgent")
     
@@ -121,7 +122,8 @@ async def main():
         llm_client=llm_client,
         tool_registry=tool_registry,
         session_manager=session_manager,
-        max_iterations=5
+        max_iterations=5,
+        enable_memory=True  # 启用记忆功能
     )
     await test_agent_memory(code_agent, "CodeUnderstandingAgent")
     

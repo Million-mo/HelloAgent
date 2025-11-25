@@ -49,7 +49,8 @@ async def demo_memory_features():
         llm_client=llm_client,
         tool_registry=tool_registry,
         session_manager=session_manager,
-        max_iterations=5
+        max_iterations=5,
+        enable_memory=True  # 启用记忆功能
     )
     
     session_id = "demo_session"
@@ -153,7 +154,8 @@ async def compare_with_without_memory():
         llm_client=llm_client,
         tool_registry=tool_registry,
         session_manager=session_manager,
-        max_iterations=3
+        max_iterations=3,
+        enable_memory=True  # 启用记忆功能
     )
     
     ws = MockWebSocket()

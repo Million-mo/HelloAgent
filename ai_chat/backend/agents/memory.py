@@ -1,4 +1,10 @@
-"""Memory Management Module - Agent记忆功能模块."""
+"""Memory Management Module - Agent记忆功能模块.
+
+设计原则：
+- MemoryManager作为Agent的可选属性，而非通过继承集成
+- 支持独立使用，不依赖Agent类
+- 提供完整的记忆管理功能：存储、检索、整理、导出
+"""
 
 import json
 from typing import Dict, List, Any, Optional
@@ -297,7 +303,8 @@ class MemoryManager:
     def generate_memory_context(
         self,
         include_types: List[MemoryType] = None,
-        max_memories: int = 10
+        max_memories: int = 10,
+        user_input: str = None
     ) -> str:
         """
         生成记忆上下文文本，供LLM使用
@@ -305,6 +312,7 @@ class MemoryManager:
         Args:
             include_types: 包含的记忆类型列表
             max_memories: 最大记忆数量
+            user_input: 用户输入(可选)，用于智能检索
         
         Returns:
             格式化的记忆上下文字符串
@@ -312,11 +320,19 @@ class MemoryManager:
         # 收集要包含的记忆
         memories = []
         
-        if include_types:
-            for mem_type in include_types:
-                memories.extend(self.get_memories_by_type(mem_type))
+        if user_input:
+            # 智能检索：基于用户输入检索相关记忆
+            memories = self._retrieve_relevant_memories(user_input, max_memories)
         else:
-            memories = list(self.memories.values())
+            # 手动检索：按类型获取
+            if include_types:
+                for mem_type in include_types:
+                    memories.extend(self.get_memories_by_type(mem_type))
+            else:
+                memories = list(self.memories.values())
+        
+        if not memories:
+            return ""
         
         # 按重要性和时间排序
         importance_order = {
@@ -330,18 +346,57 @@ class MemoryManager:
         # 限制数量
         memories = memories[:max_memories]
         
-        if not memories:
-            return ""
-        
         # 生成格式化文本
-        context_lines = ["## 相关记忆信息\n"]
+        context_lines = ["## 💭 相关记忆信息\n"]
         
         for memory in memories:
-            context_lines.append(f"- [{memory.memory_type.value}] {memory.content}")
+            context_lines.append(f"- {memory.content}")
             if memory.tags:
                 context_lines.append(f"  标签: {', '.join(memory.tags)}")
         
         return "\n".join(context_lines)
+    
+    def _retrieve_relevant_memories(
+        self,
+        user_input: str,
+        max_memories: int = 5
+    ) -> List[Memory]:
+        """
+        检索与用户输入相关的记忆
+        
+        Args:
+            user_input: 用户输入
+            max_memories: 最大返回数量
+        
+        Returns:
+            相关记忆列表
+        """
+        # 简单实现：关键词搜索
+        keywords = user_input.split()[:5]
+        
+        relevant = []
+        for keyword in keywords:
+            if len(keyword) > 2:
+                found = self.search_memories(keyword)
+                relevant.extend(found)
+        
+        # 去重并按重要性排序
+        unique_memories = {m.id: m for m in relevant}.values()
+        
+        importance_order = {
+            MemoryImportance.CRITICAL: 3,
+            MemoryImportance.HIGH: 2,
+            MemoryImportance.MEDIUM: 1,
+            MemoryImportance.LOW: 0
+        }
+        
+        sorted_memories = sorted(
+            unique_memories,
+            key=lambda m: (importance_order[m.importance], m.timestamp),
+            reverse=True
+        )
+        
+        return sorted_memories[:max_memories]
     
     def get_statistics(self) -> Dict[str, Any]:
         """获取记忆统计信息"""

@@ -8,14 +8,13 @@ from fastapi import WebSocket
 from tools.registry import ToolRegistry
 from chat.session import SessionManager
 from .base_agent import BaseAgent
-from .memory_mixin import MemoryMixin
-from .memory import MemoryType, MemoryImportance
+from .memory import MemoryManager, Memory, MemoryType, MemoryImportance
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-class FunctionCallAgent(MemoryMixin, BaseAgent):
+class FunctionCallAgent(BaseAgent):
     """
     Function Call Agent - 基于OpenAI Function Calling的Agent
     
@@ -33,7 +32,10 @@ class FunctionCallAgent(MemoryMixin, BaseAgent):
         tool_registry: ToolRegistry,
         session_manager: SessionManager,
         max_iterations: int = 10,
-        system_prompt: Optional[str] = None
+        system_prompt: Optional[str] = None,
+        enable_memory: bool = False,
+        max_short_term_memories: int = 50,
+        max_long_term_memories: int = 100
     ):
         """
         初始化 Function Call Agent
@@ -45,6 +47,9 @@ class FunctionCallAgent(MemoryMixin, BaseAgent):
             session_manager: 会话管理器
             max_iterations: 最大工具调用迭代次数
             system_prompt: 系统提示词
+            enable_memory: 是否启用记忆功能
+            max_short_term_memories: 短期记忆最大数量
+            max_long_term_memories: 长期记忆最大数量
         """
         super().__init__(
             name=name,
@@ -55,16 +60,85 @@ class FunctionCallAgent(MemoryMixin, BaseAgent):
             system_prompt=system_prompt,
             max_iterations=max_iterations
         )
-        
-        # 初始化记忆功能
-        self._init_memory(max_short_term_memories=50, max_long_term_memories=100)
-        
         self.max_iterations = max_iterations
         
-        logger.info(f"FunctionCallAgent '{self.name}' 已初始化")
+        # 记忆管理器（可选）
+        self.enable_memory = enable_memory
+        self._session_memories: Dict[str, MemoryManager] = {}
+        self.max_short_term_memories = max_short_term_memories
+        self.max_long_term_memories = max_long_term_memories
+        
+        logger.info(f"FunctionCallAgent '{self.name}' 已初始化 (记忆: {'启用' if enable_memory else '禁用'})")
         tool_names = [tool.name for tool in self.tool_registry.get_all_tools()]
         logger.debug(f"可用工具 ({len(tool_names)}): {', '.join(tool_names)}")
         logger.debug(f"最大迭代次数: {self.max_iterations}")
+    
+    def _get_memory_manager(self, session_id: str) -> Optional[MemoryManager]:
+        """获取会话的记忆管理器"""
+        if not self.enable_memory:
+            return None
+            
+        if session_id not in self._session_memories:
+            self._session_memories[session_id] = MemoryManager(
+                max_short_term=self.max_short_term_memories,
+                max_long_term=self.max_long_term_memories
+            )
+            logger.debug(f"为会话 {session_id} 创建MemoryManager")
+        return self._session_memories[session_id]
+    
+    def add_long_term_memory(
+        self,
+        session_id: str,
+        content: str,
+        importance: MemoryImportance = MemoryImportance.HIGH,
+        tags: List[str] = None,
+        metadata: Dict[str, Any] = None
+    ) -> Optional['Memory']:
+        """添加长期记忆"""
+        memory_manager = self._get_memory_manager(session_id)
+        if not memory_manager:
+            logger.warning(f"[{self.name}] 记忆功能未启用")
+            return None
+            
+        return memory_manager.add_memory(
+            content=content,
+            memory_type=MemoryType.LONG_TERM,
+            importance=importance,
+            tags=tags or [],
+            metadata=metadata or {}
+        )
+    
+    def get_memory_statistics(self, session_id: str) -> Dict[str, Any]:
+        """获取记忆统计信息"""
+        memory_manager = self._get_memory_manager(session_id)
+        if not memory_manager:
+            return {"total": 0, "by_type": {}, "by_importance": {}}
+        return memory_manager.get_statistics()
+    
+    def get_all_memories(self, session_id: str) -> List['Memory']:
+        """获取所有记忆"""
+        memory_manager = self._get_memory_manager(session_id)
+        if not memory_manager:
+            return []
+        return list(memory_manager.memories.values())
+    
+    def search_memories(self, session_id: str, keyword: str) -> List['Memory']:
+        """搜索记忆"""
+        memory_manager = self._get_memory_manager(session_id)
+        if not memory_manager:
+            return []
+        return memory_manager.search_memories(keyword)
+    
+    def clear_session_memories(
+        self,
+        session_id: str,
+        memory_type: MemoryType = None
+    ) -> None:
+        """清空会话记忆"""
+        memory_manager = self._get_memory_manager(session_id)
+        if memory_manager:
+            memory_manager.clear_memories(memory_type)
+            logger.info(f"[{self.name}] 清空会话 {session_id} 的记忆")
     
     async def run(
         self,

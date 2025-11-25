@@ -8,7 +8,6 @@ from .planning_agent import PlanningAgent
 from .code_understanding_agent import CodeUnderstandingAgent
 from .documentation_agent import DocumentationAgent
 from .memory import Memory, MemoryManager, MemoryType, MemoryImportance
-from .memory_mixin import MemoryMixin
 from .memory_function_call_agent import MemoryFunctionCallAgent
 
 __all__ = [
@@ -25,6 +24,5 @@ __all__ = [
     "MemoryManager",
     "MemoryType",
     "MemoryImportance",
-    "MemoryMixin",
     "MemoryFunctionCallAgent",
 ]
