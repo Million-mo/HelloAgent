@@ -5,6 +5,11 @@ from .agent_manager import AgentManager
 from .function_call_agent import FunctionCallAgent
 from .specialized_agents import SimpleAgent, AnalysisAgent, CodeAgent
 from .planning_agent import PlanningAgent
+from .code_understanding_agent import CodeUnderstandingAgent
+from .documentation_agent import DocumentationAgent
+from .memory import Memory, MemoryManager, MemoryType, MemoryImportance
+from .memory_mixin import MemoryMixin
+from .memory_function_call_agent import MemoryFunctionCallAgent
 
 __all__ = [
     "BaseAgent",
@@ -14,5 +19,12 @@ __all__ = [
     "AnalysisAgent",
     "CodeAgent",
     "PlanningAgent",
-    "ToolAwareAgent",
+    "CodeUnderstandingAgent",
+    "DocumentationAgent",
+    "Memory",
+    "MemoryManager",
+    "MemoryType",
+    "MemoryImportance",
+    "MemoryMixin",
+    "MemoryFunctionCallAgent",
 ]

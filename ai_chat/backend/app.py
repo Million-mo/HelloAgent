@@ -20,6 +20,8 @@ from agents import (
     AnalysisAgent,
     CodeAgent,
     PlanningAgent,
+    CodeUnderstandingAgent,
+    DocumentationAgent,
 )
 from tools.registry import ToolRegistry
 from tools.weather import WeatherTool
@@ -27,6 +29,12 @@ from tools.calculator import CalculatorTool
 from tools.time_tool import TimeTool
 from tools.terminal import TerminalTool
 from tools.file_operations import ReadFileTool, WriteFileTool, ListDirectoryTool
+from tools.code_analysis import (
+    AnalyzeProjectStructureTool,
+    SearchCodeTool,
+    FindFilesTool,
+    AnalyzeFileTool
+)
 
 # --- 1. 配置和初始化 ---
 
@@ -82,6 +90,11 @@ tool_registry.register(TerminalTool())  # 终端命令执行
 tool_registry.register(ReadFileTool())  # 读取文件
 tool_registry.register(WriteFileTool())  # 写入文件
 tool_registry.register(ListDirectoryTool())  # 列出目录
+# 注册代码分析工具
+tool_registry.register(AnalyzeProjectStructureTool())  # 分析项目结构
+tool_registry.register(SearchCodeTool())  # 搜索代码
+tool_registry.register(FindFilesTool())  # 查找文件
+tool_registry.register(AnalyzeFileTool())  # 分析文件结构
 registered_tools = [tool.name for tool in tool_registry.get_all_tools()]
 logger.info(f"已注册 {len(registered_tools)} 个工具: {', '.join(registered_tools)}")
 
@@ -110,6 +123,28 @@ function_call_agent = FunctionCallAgent(
 )
 agent_manager.register_agent(function_call_agent, is_default=True)
 logger.info("FunctionCallAgent 已注册为默认 Agent")
+
+# 2. CodeUnderstandingAgent - 代码理解专家Agent
+code_understanding_agent = CodeUnderstandingAgent(
+    name="代码理解助手",
+    llm_client=llm_client,
+    tool_registry=tool_registry,
+    session_manager=session_manager,
+    max_iterations=15,
+)
+agent_manager.register_agent(code_understanding_agent)
+logger.info("CodeUnderstandingAgent 已注册")
+
+# 3. DocumentationAgent - 技术文档生成Agent
+documentation_agent = DocumentationAgent(
+    name="文档生成助手",
+    llm_client=llm_client,
+    tool_registry=tool_registry,
+    session_manager=session_manager,
+    max_iterations=20,
+)
+agent_manager.register_agent(documentation_agent)
+logger.info("DocumentationAgent 已注册")
 
 
 # # 2. SimpleAgent - 纯对话Agent
