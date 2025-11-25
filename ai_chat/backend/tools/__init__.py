@@ -7,6 +7,12 @@ from .calculator import CalculatorTool
 from .time_tool import TimeTool
 from .terminal import TerminalTool
 from .file_operations import ReadFileTool, WriteFileTool, ListDirectoryTool
+from .code_analysis import (
+    AnalyzeProjectStructureTool,
+    SearchCodeTool,
+    FindFilesTool,
+    AnalyzeFileTool
+)
 
 __all__ = [
     "BaseTool",
@@ -18,4 +24,8 @@ __all__ = [
     "ReadFileTool",
     "WriteFileTool",
     "ListDirectoryTool",
+    "AnalyzeProjectStructureTool",
+    "SearchCodeTool",
+    "FindFilesTool",
+    "AnalyzeFileTool",
 ]
