@@ -49,8 +49,8 @@ class DocumentationAgent(BaseAgent):
         self,
         name: str,
         llm_client,
-        tool_registry: ToolRegistry,
-        session_manager: SessionManager,
+        tool_registry: Optional[ToolRegistry] = None,
+        session_manager: SessionManager = None,
         max_iterations: int = 20,
         system_prompt: Optional[str] = None,
         enable_memory: bool = False
@@ -61,10 +61,11 @@ class DocumentationAgent(BaseAgent):
         Args:
             name: Agent 名称
             llm_client: LLM 客户端实例
-            tool_registry: 工具注册表
+            tool_registry: 工具注册表（如果传入则使用，否则创建专用工具子集）
             session_manager: 会话管理器
             max_iterations: 最大工具调用迭代次数
             system_prompt: 系统提示词（如果不提供则使用默认）
+            enable_memory: 是否启用记忆功能
         """
         # 默认系统提示词
         default_system_prompt = """你是一个专业的技术文档生成专家，专门帮助开发者分析代码项目并生成高质量的技术文档。

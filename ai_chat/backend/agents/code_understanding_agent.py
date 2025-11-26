@@ -43,8 +43,8 @@ class CodeUnderstandingAgent(BaseAgent):
         self,
         name: str,
         llm_client,
-        tool_registry: ToolRegistry,
-        session_manager: SessionManager,
+        tool_registry: Optional[ToolRegistry] = None,
+        session_manager: SessionManager = None,
         max_iterations: int = 15,
         system_prompt: Optional[str] = None,
         enable_memory: bool = False
@@ -55,7 +55,7 @@ class CodeUnderstandingAgent(BaseAgent):
         Args:
             name: Agent 名称
             llm_client: LLM 客户端实例
-            tool_registry: 工具注册表
+            tool_registry: 工具注册表（如果传入则使用，否则创建专用工具子集）
             session_manager: 会话管理器
             max_iterations: 最大工具调用迭代次数
             system_prompt: 系统提示词（如果不提供则使用默认）
@@ -90,21 +90,25 @@ class CodeUnderstandingAgent(BaseAgent):
 - 对于复杂问题，采用分步分析的方式
 - 保持专业和简洁的沟通风格"""
 
-        # 为 CodeUnderstandingAgent 创建专用工具子集
-        # 该 Agent 只需要代码分析相关的工具
-        agent_tool_registry = ToolRegistry()
-        required_tools = [
-            AnalyzeProjectStructureTool(),
-            SearchCodeTool(),
-            FindFilesTool(),
-            AnalyzeFileTool(),
-            ReadFileTool(),
-            ListDirectoryTool()
-        ]
-        for tool in required_tools:
-            agent_tool_registry.register(tool)
-        
-        logger.info(f"CodeUnderstandingAgent '{name}' 创建工具子集成功: {', '.join([t.name for t in required_tools])}")
+        # 优先使用传入的 tool_registry，如果没有则创建专用工具子集
+        if tool_registry is not None:
+            agent_tool_registry = tool_registry
+            logger.debug(f"CodeUnderstandingAgent '{name}' 使用传入的工具注册表")
+        else:
+            # 为 CodeUnderstandingAgent 创建专用工具子集
+            # 该 Agent 只需要代码分析相关的工具
+            agent_tool_registry = ToolRegistry()
+            required_tools = [
+                AnalyzeProjectStructureTool(),
+                SearchCodeTool(),
+                FindFilesTool(),
+                AnalyzeFileTool(),
+                ReadFileTool(),
+                ListDirectoryTool()
+            ]
+            for tool in required_tools:
+                agent_tool_registry.register(tool)
+            logger.info(f"CodeUnderstandingAgent '{name}' 创建工具子集成功: {', '.join([t.name for t in required_tools])}")
 
         super().__init__(
             name=name,

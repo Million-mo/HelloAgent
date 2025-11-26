@@ -127,27 +127,27 @@ function_call_agent = FunctionCallAgent(
 agent_manager.register_agent(function_call_agent, is_default=True)
 logger.info("FunctionCallAgent 已注册为默认 Agent")
 
-# 2. CodeUnderstandingAgent - 代码理解专家Agent
-code_understanding_agent = CodeUnderstandingAgent(
-    name="代码理解助手",
-    llm_client=llm_client,
-    tool_registry=tool_registry,
-    session_manager=session_manager,
-    max_iterations=15,
-)
-agent_manager.register_agent(code_understanding_agent)
-logger.info("CodeUnderstandingAgent 已注册")
+# # 2. CodeUnderstandingAgent - 代码理解专家Agent
+# code_understanding_agent = CodeUnderstandingAgent(
+#     name="代码理解助手",
+#     llm_client=llm_client,
+#     tool_registry=tool_registry,
+#     session_manager=session_manager,
+#     max_iterations=15,
+# )
+# agent_manager.register_agent(code_understanding_agent)
+# logger.info("CodeUnderstandingAgent 已注册")
 
-# 3. DocumentationAgent - 技术文档生成Agent
-documentation_agent = DocumentationAgent(
-    name="文档生成助手",
-    llm_client=llm_client,
-    tool_registry=tool_registry,
-    session_manager=session_manager,
-    max_iterations=20,
-)
-agent_manager.register_agent(documentation_agent)
-logger.info("DocumentationAgent 已注册")
+# # 3. DocumentationAgent - 技术文档生成Agent
+# documentation_agent = DocumentationAgent(
+#     name="文档生成助手",
+#     llm_client=llm_client,
+#     tool_registry=tool_registry,
+#     session_manager=session_manager,
+#     max_iterations=20,
+# )
+# agent_manager.register_agent(documentation_agent)
+# logger.info("DocumentationAgent 已注册")
 
 
 # # 2. SimpleAgent - 纯对话Agent

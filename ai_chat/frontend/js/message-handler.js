@@ -27,7 +27,7 @@ export class MessageHandler {
         messageDiv.id = messageId;
 
         const icon = role === 'user' ? 'fa-user' : 'fa-robot';
-        const name = role === 'user' ? '你' : 'AI助手';
+        const name = role === 'user' ? 'User' : 'AI助手';
 
         messageDiv.innerHTML = `
             <div class="message-content">

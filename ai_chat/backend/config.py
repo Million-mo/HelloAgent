@@ -10,14 +10,17 @@ class LLMConfig(BaseModel):
     
     api_key: str = Field(
         default="sk-a39471beda78451f83d3068fce622d08",
+        # default="sk-x3xGbBHN31URI49uYBLKwakUgwOjo2PyQ5msK9RScffdZvPk",
         description="API key for LLM service"
     )
     base_url: str = Field(
         default="https://api.deepseek.com/v1",
+        # default="https://api-key.info/v1",
         description="Base URL for LLM API"
     )
     model: str = Field(
         default="deepseek-chat",
+        # default="gemini-3-pro-preview",
         description="LLM model name"
     )
     
