@@ -125,6 +125,12 @@ class AppConfig(BaseModel):
             "5. 读取文件 (read_file) - 读取文本文件内容\n"
             "6. 写入文件 (write_file) - 将内容写入文件\n"
             "7. 列出目录 (list_directory) - 列出目录中的文件和子目录\n"
+            "8. 网站内容读取 (read_website) - 读取并提取网站的文本内容，支持HTTP和HTTPS协议\n"
+            "9. 代码分析工具：\n"
+            "   - analyze_project_structure: 分析项目目录结构\n"
+            "   - search_code: 在代码中搜索特定内容\n"
+            "   - find_files: 查找特定文件\n"
+            "   - analyze_file: 分析文件的详细结构\n"
             "请根据用户需求，灵活使用合适的工具来帮助用户。"
         ),
         description="System prompt for AI assistant"

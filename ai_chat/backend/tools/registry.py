@@ -124,3 +124,4 @@ class ToolRegistry:
     def clear(self) -> None:
         """Clear all registered tools."""
         self._tools.clear()
+

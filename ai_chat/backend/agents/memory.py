@@ -1,9 +1,10 @@
 """Memory Management Module - Agent记忆功能模块.
 
-设计原则：
-- MemoryManager作为Agent的可选属性，而非通过继承集成
-- 支持独立使用，不依赖Agent类
-- 提供完整的记忆管理功能：存储、检索、整理、导出
+设计原则（新架构）：
+- MemoryManager作为独立的服务对象，可被多个Agent共享
+- MemoryService统一管理全局和会话级记忆
+- Agent通过依赖注入接收MemoryManager，而非内部创建
+- 支持灵活的记忆共享策略：全局共享/会话独立/Agent独立
 """
 
 import json
@@ -456,3 +457,172 @@ class MemoryManager:
     def __repr__(self) -> str:
         stats = self.get_statistics()
         return f"<MemoryManager(total={stats['total']}, by_type={stats['by_type']})>"
+
+
+class MemoryScope(str, Enum):
+    """记忆范围枚举"""
+    GLOBAL = "global"           # 全局共享：所有Agent和会话共享
+    SESSION = "session"         # 会话级：同一会话内的所有Agent共享
+    AGENT = "agent"             # Agent独立：某个Agent特有的记忆
+
+
+class MemoryService:
+    """
+    记忆服务 - 统一管理全局和会话级记忆
+    
+    设计特点：
+    1. 全局单例：整个应用程序只有一个MemoryService实例
+    2. 多级记忆：支持全局/会话/Agent三级记忆管理
+    3. 灵活共享：可配置记忆在不同Agent间的共享策略
+    4. 生命周期管理：自动清理过期会话的记忆
+    
+    使用场景：
+    - 全局共享知识：用户偏好、系统配置等
+    - 会话上下文：当前对话的历史和状态
+    - Agent专属记忆：某个Agent特定的工作状态
+    """
+    
+    _instance = None  # 单例实例
+    
+    def __new__(cls):
+        """单例模式实现"""
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
+    
+    def __init__(self, 
+                 global_max_short_term: int = 100,
+                 global_max_long_term: int = 200,
+                 session_max_short_term: int = 50,
+                 session_max_long_term: int = 100,
+                 agent_max_short_term: int = 30,
+                 agent_max_long_term: int = 50):
+        """
+        初始化记忆服务
+        
+        Args:
+            global_max_short_term: 全局短期记忆上限
+            global_max_long_term: 全局长期记忆上限
+            session_max_short_term: 会话短期记忆上限
+            session_max_long_term: 会话长期记忆上限
+            agent_max_short_term: Agent短期记忆上限
+            agent_max_long_term: Agent长期记忆上限
+        """
+        # 避免重复初始化
+        if self._initialized:
+            return
+        
+        self._initialized = True
+        
+        # 全局记忆管理器（所有Agent和会话共享）
+        self.global_memory = MemoryManager(
+            max_short_term=global_max_short_term,
+            max_long_term=global_max_long_term
+        )
+        
+        # 会话级记忆：{session_id: MemoryManager}
+        self._session_memories: Dict[str, MemoryManager] = {}
+        
+        # Agent独立记忆：{(session_id, agent_name): MemoryManager}
+        self._agent_memories: Dict[tuple, MemoryManager] = {}
+        
+        # 配置参数
+        self.session_max_short_term = session_max_short_term
+        self.session_max_long_term = session_max_long_term
+        self.agent_max_short_term = agent_max_short_term
+        self.agent_max_long_term = agent_max_long_term
+        
+        logger.info("✅ MemoryService已初始化（全局单例）")
+    
+    def get_memory_manager(
+        self, 
+        scope: MemoryScope,
+        session_id: str = None,
+        agent_name: str = None
+    ) -> MemoryManager:
+        """
+        获取记忆管理器
+        
+        Args:
+            scope: 记忆范围
+            session_id: 会话 ID（scope=SESSION/AGENT 时必需）
+            agent_name: Agent名称（scope=AGENT 时必需）
+        
+        Returns:
+            MemoryManager实例
+        """
+        if scope == MemoryScope.GLOBAL:
+            return self.global_memory
+        
+        elif scope == MemoryScope.SESSION:
+            if not session_id:
+                raise ValueError("session_id is required for SESSION scope")
+            
+            if session_id not in self._session_memories:
+                self._session_memories[session_id] = MemoryManager(
+                    max_short_term=self.session_max_short_term,
+                    max_long_term=self.session_max_long_term
+                )
+                logger.debug(f"创建会话记忆管理器: {session_id}")
+            
+            return self._session_memories[session_id]
+        
+        elif scope == MemoryScope.AGENT:
+            if not session_id or not agent_name:
+                raise ValueError("session_id and agent_name are required for AGENT scope")
+            
+            key = (session_id, agent_name)
+            if key not in self._agent_memories:
+                self._agent_memories[key] = MemoryManager(
+                    max_short_term=self.agent_max_short_term,
+                    max_long_term=self.agent_max_long_term
+                )
+                logger.debug(f"创建Agent记忆管理器: {agent_name} @ {session_id}")
+            
+            return self._agent_memories[key]
+        
+        else:
+            raise ValueError(f"Unknown memory scope: {scope}")
+    
+    def clear_session_memories(self, session_id: str) -> None:
+        """
+        清除指定会话的所有记忆
+        
+        Args:
+            session_id: 会话 ID
+        """
+        # 清除会话级记忆
+        if session_id in self._session_memories:
+            del self._session_memories[session_id]
+            logger.info(f"已清除会话记忆: {session_id}")
+        
+        # 清除此会话的所有Agent记忆
+        keys_to_remove = [k for k in self._agent_memories.keys() if k[0] == session_id]
+        for key in keys_to_remove:
+            del self._agent_memories[key]
+            logger.debug(f"已清除Agent记忆: {key[1]} @ {session_id}")
+    
+    def get_statistics(self) -> Dict[str, Any]:
+        """
+        获取记忆服务的统计信息
+        
+        Returns:
+            统计信息字典
+        """
+        return {
+            "global_memory": self.global_memory.get_statistics(),
+            "session_count": len(self._session_memories),
+            "agent_memory_count": len(self._agent_memories),
+            "total_sessions": list(self._session_memories.keys())
+        }
+    
+    def reset(self) -> None:
+        """重置所有记忆（仅用于测试）"""
+        self.global_memory = MemoryManager(
+            max_short_term=100,
+            max_long_term=200
+        )
+        self._session_memories.clear()
+        self._agent_memories.clear()
+        logger.warning("⚠️ MemoryService已重置（所有记忆已清空）")

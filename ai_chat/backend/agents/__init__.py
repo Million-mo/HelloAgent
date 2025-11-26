@@ -7,7 +7,7 @@ from .specialized_agents import SimpleAgent, AnalysisAgent, CodeAgent
 from .planning_agent import PlanningAgent
 from .code_understanding_agent import CodeUnderstandingAgent
 from .documentation_agent import DocumentationAgent
-from .memory import Memory, MemoryManager, MemoryType, MemoryImportance
+from .memory import Memory, MemoryManager, MemoryType, MemoryImportance, MemoryService, MemoryScope
 from .memory_function_call_agent import MemoryFunctionCallAgent
 
 __all__ = [
@@ -24,5 +24,7 @@ __all__ = [
     "MemoryManager",
     "MemoryType",
     "MemoryImportance",
+    "MemoryService",
+    "MemoryScope",
     "MemoryFunctionCallAgent",
 ]

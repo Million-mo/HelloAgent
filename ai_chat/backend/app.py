@@ -35,6 +35,7 @@ from tools.code_analysis import (
     FindFilesTool,
     AnalyzeFileTool
 )
+from tools.web_scraper import WebScraperTool
 
 # --- 1. 配置和初始化 ---
 
@@ -95,6 +96,8 @@ tool_registry.register(AnalyzeProjectStructureTool())  # 分析项目结构
 tool_registry.register(SearchCodeTool())  # 搜索代码
 tool_registry.register(FindFilesTool())  # 查找文件
 tool_registry.register(AnalyzeFileTool())  # 分析文件结构
+# 注册网络工具
+tool_registry.register(WebScraperTool())  # 读取网站内容
 registered_tools = [tool.name for tool in tool_registry.get_all_tools()]
 logger.info(f"已注册 {len(registered_tools)} 个工具: {', '.join(registered_tools)}")
 

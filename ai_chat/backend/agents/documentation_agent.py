@@ -6,6 +6,13 @@ from typing import Dict, List, Any, Optional
 from fastapi import WebSocket
 
 from tools.registry import ToolRegistry
+from tools.code_analysis import (
+    AnalyzeProjectStructureTool,
+    SearchCodeTool,
+    FindFilesTool,
+    AnalyzeFileTool
+)
+from tools.file_operations import ReadFileTool, ListDirectoryTool
 from chat.session import SessionManager
 from .base_agent import BaseAgent
 from .memory import MemoryManager, Memory, MemoryType, MemoryImportance
@@ -142,11 +149,27 @@ class DocumentationAgent(BaseAgent):
 → 6. 组织信息并生成Markdown格式的架构文档
 → 7. 在对话中直接输出完整文档"""
 
+        # 为 DocumentationAgent 创建专用工具子集
+        # 该 Agent 只需要代码分析相关的工具，用于分析和生成文档
+        agent_tool_registry = ToolRegistry()
+        required_tools = [
+            AnalyzeProjectStructureTool(),
+            SearchCodeTool(),
+            FindFilesTool(),
+            AnalyzeFileTool(),
+            ReadFileTool(),
+            ListDirectoryTool()
+        ]
+        for tool in required_tools:
+            agent_tool_registry.register(tool)
+        
+        logger.info(f"DocumentationAgent '{name}' 创建工具子集成功: {', '.join([t.name for t in required_tools])}")
+
         super().__init__(
             name=name,
             agent_type="documentation",
             llm_client=llm_client,
-            tool_registry=tool_registry,
+            tool_registry=agent_tool_registry,
             session_manager=session_manager,
             system_prompt=system_prompt or default_system_prompt,
             max_iterations=max_iterations

@@ -75,7 +75,15 @@ class BaseAgent(ABC):
         }
     
     def get_available_tools(self) -> List[str]:
-        """获取可用工具列表"""
+        """
+        获取可用工具列表
+        
+        返回的是该 Agent 实例所有可使用的工具。
+        对于使用工具子集的 Agent，此方法仅返回该子集中的工具。
+        
+        Returns:
+            工具名称列表
+        """
         return [tool.name for tool in self.tool_registry.get_all_tools()]
     
     def _ensure_system_prompt(self, messages: List[Dict[str, Any]]) -> None:

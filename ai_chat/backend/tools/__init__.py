@@ -13,6 +13,7 @@ from .code_analysis import (
     FindFilesTool,
     AnalyzeFileTool
 )
+from .web_scraper import WebScraperTool
 
 __all__ = [
     "BaseTool",
@@ -28,4 +29,5 @@ __all__ = [
     "SearchCodeTool",
     "FindFilesTool",
     "AnalyzeFileTool",
+    "WebScraperTool",
 ]
