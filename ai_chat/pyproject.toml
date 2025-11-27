@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-chat"
+version = "0.1.0"
+description = "A multi-agent system with LLM integration"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "AI Chat Team"}
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+
+dependencies = [
+    "fastapi==0.104.1",
+    "uvicorn==0.24.0",
+    "openai==1.3.5",
+    "websockets==12.0",
+    "python-multipart==0.0.6",
+    "aiofiles==23.2.1",
+    "aiohttp==3.9.1",
+    "beautifulsoup4==4.12.2",
+    "selenium==4.15.2",
+    "webdriver-manager==4.0.1",
+    "httpx==0.25.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+]
+
+[project.scripts]
+ai-chat-server = "ai_chat.app:main"
+
+[tool.setuptools.package-data]
+"*" = ["*.txt", "*.md"]
